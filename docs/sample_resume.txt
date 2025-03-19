@@ -1,0 +1,62 @@
+Neal Iyer 
+                       Data Analyst | McLean, VA | 240-644-7960 | neal.iyer88@gmail.com Professional Summary 
+
+ 
+Federal Data Analyst with 4+ years in human capital analytics, data-driven decision-making, and workforce planning. Skilled in SQL, Python, Tableau, and Power BI, with a track record of optimizing HR processes through data analysis, reporting automation, and visualization.  
+Professional Skills 
+
+ 
+? Data Analytics & Visualization: SQL · Python · Tableau · Power BI · Advanced Excel · Advanced MS Office Suite 
+? Human Capital & Workforce Analytics: HR Metrics · Hiring Pipeline Analytics · Employee Retention Analysis · Workforce Planning 
+? Data Management & Integrity: Data Mining · Data Cleaning · Quality Assurance · Database Management · Process Optimization 
+? Reporting & Decision Support: Ad Hoc Reporting · Dashboard Development · Executive Presentations · Stakeholder Communication 
+? Process Automation & Compliance: Workflow Automation · Data Privacy & Security · Federal HR Policy Compliance 
+? Strategic Insights & Decision Making: Data-Driven Recommendations · Trend Analysis · Large Dataset Processing · 
+      Proactive Problem-Solving Experience 
+
+ 
+Substance Abuse and Mental Health Administration, Department of HHS 
+Budget Analyst 	Dec '23 - Mar '25 
+· Conducted data mining of critical human capital information across divisions to support strategic decision-making and hiring status evaluations, assessing effectiveness through comprehensive data analysis procedures to enhance workforce planning. 
+· Developed an Excel VBA-based incentive tracking system, integrating engagement analysis and survey design to assess incentive award effectiveness. Implemented automated validation checks and dynamic data processing workflows, increasing data accuracy by 85% and enhancing communication-engagement data insights for decision-making. 
+· Engineered a real-time Python-based payroll tracking system, integrating 10+ fund sources and 25 Lines of Accounting, leveraging SQL for data extraction and pandas for analysis, reducing reconciliation time by ~2 hours/month and improving payroll forecasting accuracy. 
+· Designed and optimized SharePoint-based data management processes, improving workflow automation and document version control for financial reporting. 
+· Conducted financial forecasting and variance analysis for a $165M payroll budget, leading to actionable FTE adjustments and full-year payroll projections, optimizing workforce planning and budget allocation. 
+· Developed Power BI dashboards to provide real-time insights into budget utilization, payroll trends, and workforce analytics, enabling data-driven decision-making. 
+· Facilitated cross-functional workshops with stakeholders to gather insights that informed the optimization of decision pathways, resulting in a 30% reduction in processing time for budget approvals. 
+· Partnered with data science teams to analyze user interactions and optimize AI algorithms, reducing budget forecasting errors by 15% and improving overall accuracy in financial planning. 
+· Ensured compliance with federal regulations and data privacy laws in all human capital reporting and workforce analytics processes, effectively managing deadlines to ensure timely and accurate reporting. 
+CRI – Department of the Interior 
+Budget Analyst 	Mar '21 - Dec '23 
+· Designed and implemented data quality improvement strategies, enhancing financial data accuracy by 20% across reporting platforms by identifying patterns and trends to drive continuous process enhancements. 
+· Led cross-functional collaboration with IT and Finance teams, improving financial database integration and analytics workflows. 
+· Developed workflow automation solutions using Python and SQL, streamlining reporting processes and reducing manual work by 15%. 
+· Created standardized annotation guidelines for financial reporting, ensuring consistency in data analysis and AI training datasets. 
+Cresa 
+Accounting Analyst 	Dec '20 - Mar '21 
+· Performed data analysis on expense trends and revenue forecasts, supporting executive decision-making with clear insights. 
+· Reconciled financial data and provided structured reporting on budget allocations and marketing expenditures. 
+FrontStream 
+Fund Accountant 	Aug '18 - Sep '20 
+· Automated financial reconciliation using SQL and VBA, reducing manual workload by 250+ hours annually. 
+· Managed a portfolio of nonprofit donations and executed data-driven decision-making for fund distribution. 
+· Designed real-time financial tracking dashboards, increasing transparency for major stakeholders. Education and Certifications 
+
+ 
+Flatiron Data Science Bootcamp Certificate | General Studies 
+• Advanced expertise in Python, SQL, data visualization, machine learning, and feature engineering. 
+• Built and optimized machine learning models for classification, regression, and time series forecasting (ARIMA, XGBoost, LightGBM, Random Forests, Gradient Boosting, Decision Trees) to extract insights from complex datasets. 
+ 
+University of Maryland (UMBC) – Baltimore County 
+  Bachelor of Arts | Economics 
+ 
+ HackerRank Intermediate SQL Certification 
+ Projects 
+
+ 
+Capstone Project: Substance Abuse Risk Prediction using Machine Learning githubcom/nealiyer88/substance_abuse_risk | Predicting opioid abuse risk using classification models with key behavioral and substance use indicators. 
+· Developed a predictive model using machine learning to assess communication effectiveness based on audience engagement. 
+· Leveraged NLP sentiment analysis to extract insights from stakeholder feedback, improving messaging strategies. 
+· Built interactive Tableau dashboards visualizing campaign performance and optimizing communication approaches. 
+Zillow Real Estate Price Forecasting w/ Time Series (ARIMA) githubcom/nealiyer88/Zillow | Time series forecasting for real estate prices using ARIMA and advanced statistical modeling. 
+· Applied ARIMA modeling and time series forecasting to predict real estate price trends with improved accuracy. · Conducted data visualization and trend analysis, enhancing insights for data-driven investment decisions. 
