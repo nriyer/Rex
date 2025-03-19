@@ -69,13 +69,46 @@ def main():
     # 2. Process the job posting.
     # You can provide a full job posting URL or paste the text directly.
     # For a URL, for example:
-    job_input = "https://example.com/job-posting"  # Replace with an actual job posting URL.
-    # Alternatively, you could use a multi-line string if pasting raw text:
-    # job_input = """
-    # We are seeking a Data Analyst with expertise in SQL, Python, and Tableau.
-    # Responsibilities include analyzing large datasets, building dashboards, and collaborating with cross-functional teams.
-    # Requirements include proficiency in SQL and Python, and familiarity with machine learning.
-    # """
+    job_input = """" 
+    At RunPod, you'll have the opportunity to work on cutting-edge technology and significantly impact the AI and ML fields. We encourage you to apply if you're driven by innovation excellence and want to be part of a team that values bold ideas and professional growth. Let's shape the future of technology together!
+
+What You'll Work On:
+
+Optimize the User Funnel: Use data analytics to enhance user engagement from acquisition to conversion, collaborating with marketing and sales to refine strategies.
+Retention Strategies: Partner with the growth team to devise and implement data-driven retention strategies, utilizing analytics to boost user loyalty.
+Monitor KPIs: Develop and track KPIs for machine reliability, working with the engineering team to ensure optimal performance.
+Cross-Functional Collaboration: Serve as a liaison between technical and non-technical teams, translating data insights into actionable cross-departmental strategies.
+Reporting: Provide regular updates on key metrics and strategic insights to senior management, driving data-informed decisions.
+
+Responsibilities:
+
+Analyze large, complex datasets to extract actionable insights about users, product performance, and operational efficiency.
+Work closely with cross-functional teams, including engineering, marketing, operations, and sales, to support data-driven decision-making.
+Develop and implement data collection systems and other strategies that optimize statistical efficiency and data quality.
+Identify, analyze, and interpret trends or patterns in complex data sets.
+Prepare reports and dashboards that use relevant data to communicate trends, patterns, and predictions.
+Collaborate with engineering teams to enhance data collection and analysis processes.
+Present findings and recommendations to stakeholders and executive leadership clearly and compellingly.
+Stay abreast of industry trends and best practices in data analysis and data science.
+
+Requirements:
+
+Bachelor's degree in Data Science, Statistics, Computer Science, or a related field. A Master's degree is a plus.
+At least three years of experience in a data analytics role, preferably with user and machine data exposure.
+Strong analytical skills with the ability to collect, organize, analyze, and disseminate significant amounts of information with attention to detail and accuracy.
+Proficiency in data analysis tools and programming languages such as SQL, Python, and R.
+Experience with data visualization tools (e.g., Mode, Tableau, or Power BI).
+Experience with data warehousing platforms (e.g., Snowflake, Athena, or Redshift)
+Excellent verbal and written communication skills, with the ability to translate complex data into actionable insights.
+Strong problem-solving skills.
+Successful completion of a background check
+
+Preferred:
+
+A Master's degree in Data Science, Statistics, Computer Science, or a related field.
+Knowledge of machine learning techniques and algorithms is a plus.
+Experience at an AI, ML, LLM company
+"""
     
     job_text = process_job_posting(job_input)
     job_keywords = extract_keywords(job_text)
