@@ -31,13 +31,6 @@ def extract_text_pdfminer(pdf_path):
         return ""
 
 # Example usage:
-if __name__ == "__main__":
-    # Update the path to match where your PDF is located.
-    # For example, if your project has a "docs" folder with "sample_resume.pdf":
-    pdf_file_path = "docs/sample_resume.pdf"  
-    pdf_text = extract_text_pdfminer(pdf_file_path)
-    print("Extracted and Cleaned Text from PDF (pdfminer):")
-    print(pdf_text)
 
 #Docx
 def extract_text_from_docx(docx_path):
@@ -52,12 +45,6 @@ def extract_text_from_docx(docx_path):
         print(f"Error reading DOCX: {e}")
         return ""
 
-# Example usage:
-if __name__ == "__main__":
-    docx_file_path = "docs/sample_resume.docx"  # Place a sample DOCX file in your project folder
-    docx_text = extract_text_from_docx(docx_file_path)
-    print("Extracted Text from DOCX:")
-    print(docx_text)
     
 #Plain Text
 def extract_text_from_txt(txt_path):
@@ -71,36 +58,92 @@ def extract_text_from_txt(txt_path):
         print(f"Error reading text file: {e}")
         return ""
 
-# Example usage:
+
 if __name__ == "__main__":
-    txt_file_path = "docs/sample_resume.txt"  # Place a sample TXT file in your project folder
-    txt_text = extract_text_from_txt(txt_file_path)
-    print("Extracted Text from TXT:")
-    print(txt_text)
+    print("\n=== PDF Sample ===")
+    pdf_file_path = "docs/sample_resume.pdf"
+    print(extract_text_pdfminer(pdf_file_path))
+
+    print("\n=== DOCX Sample ===")
+    docx_file_path = "docs/sample_resume.docx"
+    print(extract_text_from_docx(docx_file_path))
+
+    print("\n=== TXT Sample ===")
+    txt_file_path = "docs/sample_resume.txt"
+    print(extract_text_from_txt(txt_file_path))
+
    
    
 #Keyword Extraction
-nlp = spacy.load("en_core_web_sm")
+_nlp = None
 
-def extract_keywords(text):
+def get_nlp():
+    global _nlp
+    if _nlp is None:
+        _nlp = spacy.load("en_core_web_sm")
+    return _nlp
+
+# === Synonym mapping for tech/tools/skills ===
+SKILL_SYNONYMS = {
+    "scikit-learn": "sklearn",
+    "sklearn": "sklearn",
+    "power bi": "powerbi",
+    "microsoft excel": "excel",
+    "ms excel": "excel",
+    "excel": "excel",
+    "amazon web services": "aws",
+    "aws": "aws",
+    "google cloud platform": "gcp",
+    "gcp": "gcp",
+    "natural language processing": "nlp",
+    "nlp": "nlp",
+    "tensorflow": "tensorflow",
+    "pytorch": "pytorch",
+    "big data": "bigdata",
+    "machine learning": "ml",
+    "ml": "ml",
+    "ai": "ai",
+    "artificial intelligence": "ai"
+}
+
+# === Custom ignore list ===
+CUSTOM_IGNORE = set(word.lower() for word in {
+    "January", "February", "March", "April", "May", "June", "July", "August",
+    "September", "October", "November", "December",
+    "Resume", "Summary", "Company", "Team", "Project", "Experience",
+    "Name", "Address", "Email", "Phone", "LinkedIn", "DOCX", "PDF"
+})
+
+def normalize_keyword(keyword):
     """
-    Extract keywords (nouns/proper nouns) from text using spaCy.
-    Returns a set of keyword strings.
+    Map a keyword to its canonical form using SKILL_SYNONYMS.
+    If no mapping exists, return the original keyword.
     """
+    return SKILL_SYNONYMS.get(keyword.lower(), keyword.lower())
+
+def extract_keywords(text, allowed_pos={"NOUN", "PROPN"}):
+    """
+    Extracts and normalizes keywords from the input text.
+    Returns a set of lowercased, lemmatized, and synonym-mapped keywords.
+    """
+    nlp = get_nlp()
     doc = nlp(text)
     keywords = set()
 
     for token in doc:
-        # Conditions for a 'keyword' token
         if (
-            token.pos_ in ["NOUN", "PROPN"]    # Must be a noun or proper noun
-            and token.is_alpha                # Must be alphabetic
+            token.pos_ in allowed_pos
+            and token.is_alpha
             and token.lower_ not in STOP_WORDS
         ):
-            # Use the lemma (base form) and make it lowercase for consistency
-            keywords.add(token.lemma_.lower())
+            lemma = token.lemma_.lower()
+            if lemma not in CUSTOM_IGNORE:
+                normalized = normalize_keyword(lemma)
+                keywords.add(normalized)
 
     return keywords
+
+
 
 #Keyword Matching
 def calculate_keyword_match(resume_keywords, job_keywords):
