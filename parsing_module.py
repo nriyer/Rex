@@ -5,23 +5,17 @@ import re
 import spacy
 import string
 from spacy.lang.en.stop_words import STOP_WORDS
+import os
+from dotenv import load_dotenv
+from openai import OpenAI
 
-#PDF
+# === PDF ===
 def clean_extracted_text(text):
-    """
-    Cleans extracted text by removing extra line breaks, bullet points, etc.
-    """
-    # Remove bullet characters
     text = text.replace("•", "")
-    # Replace multiple consecutive newlines with a single newline
     text = re.sub(r'\n+', '\n', text)
-    # Strip leading/trailing whitespace
     return text.strip()
 
 def extract_text_pdfminer(pdf_path):
-    """
-    Extracts text from a PDF file using pdfminer.six, then cleans the extracted text.
-    """
     try:
         raw_text = extract_text(pdf_path)
         cleaned_text = clean_extracted_text(raw_text)
@@ -30,13 +24,8 @@ def extract_text_pdfminer(pdf_path):
         print(f"Error reading PDF with pdfminer: {e}")
         return ""
 
-# Example usage:
-
-#Docx
+# === DOCX ===
 def extract_text_from_docx(docx_path):
-    """
-    Extracts text from a DOCX file using python-docx.
-    """
     try:
         doc = docx.Document(docx_path)
         full_text = [para.text for para in doc.paragraphs]
@@ -45,19 +34,14 @@ def extract_text_from_docx(docx_path):
         print(f"Error reading DOCX: {e}")
         return ""
 
-    
-#Plain Text
+# === TXT ===
 def extract_text_from_txt(txt_path):
-    """
-    Reads text from a plain text file.
-    """
     try:
         with open(txt_path, "r", encoding="cp1252") as file:
             return file.read()
     except Exception as e:
         print(f"Error reading text file: {e}")
         return ""
-
 
 if __name__ == "__main__":
     print("\n=== PDF Sample ===")
@@ -72,9 +56,7 @@ if __name__ == "__main__":
     txt_file_path = "docs/sample_resume.txt"
     print(extract_text_from_txt(txt_file_path))
 
-   
-   
-#Keyword Extraction
+# === NLP Setup ===
 _nlp = None
 
 def get_nlp():
@@ -83,30 +65,18 @@ def get_nlp():
         _nlp = spacy.load("en_core_web_sm")
     return _nlp
 
-# === Synonym mapping for tech/tools/skills ===
+# === Synonyms ===
 SKILL_SYNONYMS = {
-    "scikit-learn": "sklearn",
-    "sklearn": "sklearn",
-    "power bi": "powerbi",
-    "microsoft excel": "excel",
-    "ms excel": "excel",
-    "excel": "excel",
-    "amazon web services": "aws",
-    "aws": "aws",
-    "google cloud platform": "gcp",
-    "gcp": "gcp",
-    "natural language processing": "nlp",
-    "nlp": "nlp",
-    "tensorflow": "tensorflow",
-    "pytorch": "pytorch",
-    "big data": "bigdata",
-    "machine learning": "ml",
-    "ml": "ml",
-    "ai": "ai",
-    "artificial intelligence": "ai"
+    "scikit-learn": "sklearn", "sklearn": "sklearn",
+    "power bi": "powerbi", "microsoft excel": "excel", "ms excel": "excel", "excel": "excel",
+    "amazon web services": "aws", "aws": "aws",
+    "google cloud platform": "gcp", "gcp": "gcp",
+    "natural language processing": "nlp", "nlp": "nlp",
+    "tensorflow": "tensorflow", "pytorch": "pytorch",
+    "big data": "bigdata", "machine learning": "ml", "ml": "ml",
+    "ai": "ai", "artificial intelligence": "ai"
 }
 
-# === Custom ignore list ===
 CUSTOM_IGNORE = set(word.lower() for word in {
     "January", "February", "March", "April", "May", "June", "July", "August",
     "September", "October", "November", "December",
@@ -115,45 +85,73 @@ CUSTOM_IGNORE = set(word.lower() for word in {
 })
 
 def normalize_keyword(keyword):
-    """
-    Map a keyword to its canonical form using SKILL_SYNONYMS.
-    If no mapping exists, return the original keyword.
-    """
     return SKILL_SYNONYMS.get(keyword.lower(), keyword.lower())
 
 def extract_keywords(text, allowed_pos={"NOUN", "PROPN"}):
-    """
-    Extracts and normalizes keywords from the input text.
-    Returns a set of lowercased, lemmatized, and synonym-mapped keywords.
-    """
     nlp = get_nlp()
     doc = nlp(text)
     keywords = set()
-
     for token in doc:
-        if (
-            token.pos_ in allowed_pos
-            and token.is_alpha
-            and token.lower_ not in STOP_WORDS
-        ):
+        if token.pos_ in allowed_pos and token.is_alpha and token.lower_ not in STOP_WORDS:
             lemma = token.lemma_.lower()
             if lemma not in CUSTOM_IGNORE:
-                normalized = normalize_keyword(lemma)
-                keywords.add(normalized)
-
+                keywords.add(normalize_keyword(lemma))
     return keywords
 
-
-
-#Keyword Matching
 def calculate_keyword_match(resume_keywords, job_keywords):
-    """
-    Calculates the percentage of job keywords that appear in the resume.
-    Returns a float (0-100).
-    """
     if not job_keywords:
-        return 0.0  # Avoid division by zero if the job posting has no keywords
-
+        return 0.0
     matched = resume_keywords.intersection(job_keywords)
-    match_percentage = (len(matched) / len(job_keywords)) * 100
-    return match_percentage
+    return (len(matched) / len(job_keywords)) * 100
+
+# === Section Parsing ===
+def setup_openai():
+    load_dotenv()
+    return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+def normalize_section_name(header_text):
+    name = header_text.strip().lower()
+    mapping = {
+        "summary": ["summary", "professional summary", "about", "bio"],
+        "skills": ["skills", "technical skills", "abilities", "competencies"],
+        "experience": ["experience", "work experience", "professional experience", "employment history", "work history"],
+        "education": ["education", "academic background"],
+        "projects": ["projects", "relevant projects"],
+        "certifications": ["certifications", "certificates", "licenses"],
+        "awards": ["awards", "honors"],
+        "publications": ["publications", "research"],
+    }
+    for std_name, variants in mapping.items():
+        if name in variants:
+            return std_name
+    # fallback to LLM
+    try:
+        client = setup_openai()
+        completion = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a resume parsing assistant."},
+                {"role": "user", "content": f"Given the section title '{header_text}', which standard resume section is it most likely referring to? Return one of: summary, skills, experience, education, projects, certifications, awards, publications, or 'other'."}
+            ],
+            max_tokens=50
+        )
+        return completion.choices[0].message.content.strip().lower()
+    except Exception as e:
+        print(f"Warning: fallback LLM normalization failed for '{header_text}' → {e}")
+        return "other"
+
+def split_resume_into_sections(resume_text):
+    sections = {}
+    pattern = re.compile(r"^([A-Z][A-Za-z\s&/-]{1,50})\s*[:\n]", re.MULTILINE)
+    matches = list(pattern.finditer(resume_text))
+    for idx, match in enumerate(matches):
+        start = match.end()
+        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(resume_text)
+        raw_header = match.group(1).strip()
+        section_text = resume_text[start:end].strip()
+        normalized = normalize_section_name(raw_header)
+        if normalized in sections:
+            sections[normalized] += "\n" + section_text
+        else:
+            sections[normalized] = section_text
+    return sections

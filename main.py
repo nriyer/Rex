@@ -11,7 +11,11 @@ from parsing_module import (
     extract_keywords,
     calculate_keyword_match
 )
-from llm_api import generate_text_gpt, filter_relevant_keywords
+from llm_utils import generate_text_gpt, filter_relevant_keywords
+import importlib
+import llm_utils
+importlib.reload(llm_utils)
+
 
 def extract_text_from_url(url):
     try:
