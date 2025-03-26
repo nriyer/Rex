@@ -113,7 +113,7 @@ def normalize_section_name(header_text):
     name = header_text.strip().lower()
     mapping = {
         "summary": ["summary", "professional summary", "about", "bio"],
-        "skills": ["skills", "technical skills", "abilities", "competencies"],
+        "skills": ["skills", "technical skills", "abilities", "competencies", "professional skills"],
         "experience": ["experience", "work experience", "professional experience", "employment history", "work history"],
         "education": ["education", "academic background"],
         "projects": ["projects", "relevant projects"],
@@ -124,34 +124,91 @@ def normalize_section_name(header_text):
     for std_name, variants in mapping.items():
         if name in variants:
             return std_name
-    # fallback to LLM
+        
+    VALID_SECTIONS = set(mapping.keys()).union({"other"})
+
+
+    # fallback to LLM (strict, concise response)
     try:
         client = setup_openai()
         completion = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a resume parsing assistant."},
-                {"role": "user", "content": f"Given the section title '{header_text}', which standard resume section is it most likely referring to? Return one of: summary, skills, experience, education, projects, certifications, awards, publications, or 'other'."}
+                {"role": "user", "content": (
+                    f"Classify '{header_text}' into exactly one category from this list: "
+                    "summary, skills, experience, education, projects, certifications, awards, publications, other. "
+                    "Return ONLY the single category word."
+                )}
             ],
-            max_tokens=50
+            max_tokens=10,   
+            temperature=0   # enforce deterministic (non-random) answers
         )
-        return completion.choices[0].message.content.strip().lower()
+        normalized_name = completion.choices[0].message.content.strip().lower()
+
+        # If GPT still returns verbose answer accidentally, default to 'other'
+        if normalized_name not in VALID_SECTIONS.keys() and normalized_name != "other":
+            print(f"⚠️ Unexpected GPT response '{normalized_name}'. Defaulting to 'other'.")
+            return "other"
+
+        return normalized_name
+
     except Exception as e:
-        print(f"Warning: fallback LLM normalization failed for '{header_text}' → {e}")
+        print(f"⚠️ Fallback LLM normalization failed for '{header_text}' → {e}")
         return "other"
+
 
 def split_resume_into_sections(resume_text):
     sections = {}
-    pattern = re.compile(r"^([A-Z][A-Za-z\s&/-]{1,50})\s*[:\n]", re.MULTILINE)
+
+    # Split lines once and store
+    lines = resume_text.splitlines()
+
+    # Dynamically capture the first line as a likely name
+    FALSE_HEADERS = set([
+        "resume", "curriculum vitae", "cv", "name", "contact", "contact information"
+    ])
+    if lines:
+        FALSE_HEADERS.add(lines[0].strip().lower())
+
+    VALID_SECTIONS = {
+        "summary", "skills", "experience", "education",
+        "projects", "certifications", "awards", "publications"
+    }
+    
+
+    pattern = re.compile(r"^(?:\s*)([A-Z][A-Za-z\s&/-]{1,40})(?::)?\s*$", re.MULTILINE)
     matches = list(pattern.finditer(resume_text))
+
     for idx, match in enumerate(matches):
+        raw_header = match.group(1).strip()
+        if raw_header.lower() in FALSE_HEADERS:
+            continue
+
+        # Check line context
+        match_line_num = resume_text[:match.start()].count("\n")
+        prev_line = lines[match_line_num - 1].strip() if match_line_num > 0 else ""
+        next_line = lines[match_line_num + 1].strip() if match_line_num + 1 < len(lines) else ""
+
+        if prev_line.startswith("•") or next_line.startswith("•") or len(next_line.split()) > 6:
+            continue
+
+        # Normalize section name via your LLM logic
+        normalized = normalize_section_name(raw_header)
+
+        # ✅ New: Accept only recognized section types
+        if normalized not in VALID_SECTIONS:
+            continue
+
         start = match.end()
         end = matches[idx + 1].start() if idx + 1 < len(matches) else len(resume_text)
-        raw_header = match.group(1).strip()
         section_text = resume_text[start:end].strip()
-        normalized = normalize_section_name(raw_header)
+
         if normalized in sections:
             sections[normalized] += "\n" + section_text
         else:
             sections[normalized] = section_text
+
     return sections
+
+
