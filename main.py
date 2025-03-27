@@ -65,7 +65,8 @@ def main():
     # === 1. Process resume file ===
     resume_file = "docs/sample_resume.pdf"
     resume_text = process_resume(resume_file)
-    sections = split_resume_into_sections(resume_text)
+    sections = split_resume_into_sections(resume_text, pdf_path=resume_file)
+
 
     # Aggregate keywords from entire resume
     resume_keywords = extract_keywords(resume_text)
