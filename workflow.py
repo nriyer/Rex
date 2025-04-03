@@ -1,10 +1,7 @@
-# main.py (Updated fully integrated version)
-
 import os
-import requests
 import ast
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
+import requests
 
 from parsing_module import (
     extract_text_pdfminer,
@@ -13,12 +10,10 @@ from parsing_module import (
     extract_keywords,
     calculate_keyword_match,
     split_resume_into_sections,
-    normalize_section_name
 )
 
 from llm_utils import enhance_section, filter_relevant_keywords
 from llm_enhancer import enhance_resume_experience
-
 
 
 def extract_text_from_url(url):
@@ -56,66 +51,21 @@ def process_job_posting(input_text_or_url):
         return input_text_or_url
 
 
-def setup_environment():
-    load_dotenv()
-    #print("✅ Environment variables loaded successfully.")
-
-
-def main():
-    setup_environment()
-
-    # === 1. Process resume file ===
-    resume_file = "docs/sample_resume.pdf"
+def run_enhancement_pipeline(resume_file, job_input):
     resume_text = process_resume(resume_file)
     sections = split_resume_into_sections(resume_text, pdf_path=resume_file)
 
-
-    # Aggregate keywords from entire resume
     resume_keywords = extract_keywords(resume_text)
-
-    # === 2. Process job posting ===
-    job_input = """Reporting to the Head of Corporate Finance, the Analyst will have a key role in Lightshift’s short-term and long-term financial planning. The ideal candidate has experience working in an entrepreneurial environment and with complex corporate financial models. 
-
-
-
-Core responsibilities will include:
-
-Develop, generate, and enhance end-to-end financial and operational models;
-Manage analysis of monthly, quarterly, and annual reviews;
-Improve and implement financial planning and budgeting process;
-Assist in the preparation of monthly, quarterly, and annual presentations to the Board and management;
-Conduct fundamental analysis of company and portfolio-level cash flow, including in-depth financial analysis to drive decision making;
-Coordinate with accounting and treasury to facilitate accurate and timely reporting;
-Support finance, accounting, and treasury functions as needed; 
-
-
-Qualifications:
-
-BA/BS in finance, accounting, economics, or related degree; CPA/CFA a plus;
-2+ years of experience with corporate FP&A; preferably in renewable energy;
-Proficient in Excel; ability to build, manipulate and interpret complex financials models and perform sensitivities;
-Proficient in PowerPoint and other reporting tools; skilled in creating presentations; 
-Entrepreneurial team player with ability to drive business execution and performance 
-Excellent interpersonal, organizational, and communication skills;
-Excellent quantitative and qualitative analytical skills;
-Understanding of GAAP financial accounting;
-Task-oriented with high attention to detail;
-Willingness to travel up to 10% of the time. 
-"""
     job_text = process_job_posting(job_input)
     job_keywords = extract_keywords(job_text)
 
-    # === 3. Calculate overlap ===
     match_percentage = calculate_keyword_match(resume_keywords, job_keywords)
-    #print("Keyword Match Percentage:", round(match_percentage, 2))
-
     enhanced_sections = {}
 
     if match_percentage < 80:
         missing_keywords = job_keywords - resume_keywords
-        #print("Raw Missing Keywords:", missing_keywords)
 
-    # ✅ Try to enhance 'experience' using the special enhancer
+    # Try to enhance 'experience' using the special enhancer
     if "experience" in sections:
         try:
             print("[⚙️] Enhancing 'experience' section using LLM enhancer...")
@@ -125,10 +75,10 @@ Willingness to travel up to 10% of the time.
         except Exception as e:
             print(f"[⚠️] LLM experience enhancement failed. Falling back to default logic.\n{e}")
 
-    # ✅ Loop through and enhance the rest of the sections (or fallback for experience if not already done)
+    # Enhance the rest of the sections
     for section_name, section_text in sections.items():
         if section_name == "experience" and "experience" in enhanced_sections:
-            continue  # already handled by LLM enhancer
+            continue
 
         prompt_keywords_str = filter_relevant_keywords(
             extract_keywords(section_text),
@@ -149,18 +99,4 @@ Willingness to travel up to 10% of the time.
 
         enhanced_sections[section_name] = enhanced_text
 
-
-        # === 5. Output enhanced sections ===
-        print("\n--- Enhanced Resume Sections ---\n")
-        for section, enhanced_content in enhanced_sections.items():
-            print(f"## {section.capitalize()} ##\n")
-            print(enhanced_content)
-            print("\n")
-
-
-    else:
-        print("Resume already meets/exceeds the keyword threshold.")
-
-
-if __name__ == "__main__":
-    main()
+    return enhanced_sections

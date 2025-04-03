@@ -72,6 +72,16 @@ def enhance_resume_experience(pdf_path, job_keywords, model="gpt-4"):
     chunks = split_experience_section(experience_text)
     parsed_jobs = [parse_job_entry(chunk) for chunk in chunks]
     parsed_jobs = [job for job in parsed_jobs if job['company'] and job['title']]
+    # ✅ Remove duplicate job entries based on (company, title, date_range)
+    seen = set()
+    deduped_jobs = []
+    for job in parsed_jobs:
+        job_id = (job["company"], job["title"], job["date_range"])
+        if job_id not in seen:
+            seen.add(job_id)
+            deduped_jobs.append(job)
+    parsed_jobs = deduped_jobs
+
 
     client = setup_openai()
     enhanced_jobs = []
