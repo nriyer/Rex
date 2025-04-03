@@ -10,7 +10,7 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
-# === PDF ===
+# === PDF TEXT CLEANUP ===
 def clean_extracted_text(text):
     text = text.replace("•", "")
     text = re.sub(r'\n+', '\n', text)
@@ -25,7 +25,6 @@ def extract_text_pdfminer(pdf_path):
         print(f"Error reading PDF with pdfminer: {e}")
         return ""
 
-# === DOCX ===
 def extract_text_from_docx(docx_path):
     try:
         doc = docx.Document(docx_path)
@@ -35,7 +34,6 @@ def extract_text_from_docx(docx_path):
         print(f"Error reading DOCX: {e}")
         return ""
 
-# === TXT ===
 def extract_text_from_txt(txt_path):
     try:
         with open(txt_path, "r", encoding="cp1252") as file:
@@ -44,45 +42,26 @@ def extract_text_from_txt(txt_path):
         print(f"Error reading text file: {e}")
         return ""
 
-if __name__ == "__main__":
-    print("\n=== PDF Sample ===")
-    pdf_file_path = "docs/sample_resume.pdf"
-    print(extract_text_pdfminer(pdf_file_path))
-
-    print("\n=== DOCX Sample ===")
-    docx_file_path = "docs/sample_resume.docx"
-    print(extract_text_from_docx(docx_file_path))
-
-    print("\n=== TXT Sample ===")
-    txt_file_path = "docs/sample_resume.txt"
-    print(extract_text_from_txt(txt_file_path))
-
-# === NLP Setup ===
+# === SPA Cy ===
 _nlp = None
-
 def get_nlp():
     global _nlp
     if _nlp is None:
         _nlp = spacy.load("en_core_web_sm")
     return _nlp
 
-# === Synonyms ===
 SKILL_SYNONYMS = {
-    "scikit-learn": "sklearn", "sklearn": "sklearn",
-    "power bi": "powerbi", "microsoft excel": "excel", "ms excel": "excel", "excel": "excel",
-    "amazon web services": "aws", "aws": "aws",
-    "google cloud platform": "gcp", "gcp": "gcp",
-    "natural language processing": "nlp", "nlp": "nlp",
-    "tensorflow": "tensorflow", "pytorch": "pytorch",
-    "big data": "bigdata", "machine learning": "ml", "ml": "ml",
-    "ai": "ai", "artificial intelligence": "ai"
+    "scikit-learn": "sklearn", "power bi": "powerbi", "microsoft excel": "excel",
+    "ms excel": "excel", "excel": "excel", "aws": "aws", "gcp": "gcp",
+    "nlp": "nlp", "tensorflow": "tensorflow", "pytorch": "pytorch",
+    "big data": "bigdata", "machine learning": "ml", "ml": "ml", "ai": "ai"
 }
 
 CUSTOM_IGNORE = set(word.lower() for word in {
     "January", "February", "March", "April", "May", "June", "July", "August",
-    "September", "October", "November", "December",
-    "Resume", "Summary", "Company", "Team", "Project", "Experience",
-    "Name", "Address", "Email", "Phone", "LinkedIn", "DOCX", "PDF"
+    "September", "October", "November", "December", "Resume", "Summary", "Company",
+    "Team", "Project", "Experience", "Name", "Address", "Email", "Phone", "LinkedIn",
+    "DOCX", "PDF"
 })
 
 def normalize_keyword(keyword):
@@ -105,15 +84,14 @@ def calculate_keyword_match(resume_keywords, job_keywords):
     matched = resume_keywords.intersection(job_keywords)
     return (len(matched) / len(job_keywords)) * 100
 
-# === Section Parsing ===
+# === GPT SETUP ===
 def setup_openai():
     load_dotenv()
     return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# === Section Normalization ===
 def normalize_section_name(header_text):
     name = header_text.strip().lower()
-
-    # Known variant mappings
     mapping = {
         "summary": ["summary", "professional summary", "about", "bio"],
         "skills": ["skills", "technical skills", "abilities", "competencies", "professional skills"],
@@ -125,14 +103,12 @@ def normalize_section_name(header_text):
         "publications": ["publications", "research"],
     }
 
-    # Try matching via local mapping
     for std_name, variants in mapping.items():
         if name in variants:
             return std_name
 
     VALID_SECTIONS = set(mapping.keys()).union({"other"})
 
-    # Fallback to GPT with strict response expectations
     try:
         client = setup_openai()
         completion = client.chat.completions.create(
@@ -148,25 +124,23 @@ def normalize_section_name(header_text):
             max_tokens=10,
             temperature=0
         )
-
         raw_response = completion.choices[0].message.content.strip().lower()
         raw_response = raw_response.strip(string.punctuation).strip()
-
-        print(f"[normalize_section_name] GPT returned: '{raw_response}' for '{header_text}'")
-
-        # ✅ Strict enforcement: must be exactly one known word
-        if raw_response in VALID_SECTIONS:
-            return raw_response
-
-        print(f"⚠️ Rejected GPT response: '{raw_response}' → defaulting to 'other'")
-        return "other"
-    
-    except Exception as e:
-        print(f"⚠️ LLM normalization failed for '{header_text}' → {e}")
+        return raw_response if raw_response in VALID_SECTIONS else "other"
+    except:
         return "other"
 
+# === Fallback Experience Extractor ===
+def extract_experience_from_raw_text(resume_text):
+    match = re.search(
+        r"(experience|work history|employment|professional experience)(.*?)"
+        r"((education|projects|certifications|skills|summary))",
+        resume_text,
+        re.IGNORECASE | re.DOTALL,
+    )
+    return match.group(2).strip() if match else ""
 
-
+# === PDF Header Extractor ===
 def extract_headers_with_pdfplumber(pdf_path, font_size_threshold=13):
     headers = []
     try:
@@ -177,22 +151,19 @@ def extract_headers_with_pdfplumber(pdf_path, font_size_threshold=13):
                         line = obj["text"].strip()
                         if line and line not in headers:
                             headers.append(line)
-                        # Force-include Experience if embedded in large font
                         if "experience" in line.lower() and "experience" not in headers:
                             headers.append("Experience")
     except Exception as e:
         print(f"[pdfplumber error] {e}")
     return headers
 
+# === MAIN PARSER ===
 def split_resume_into_sections(resume_text, pdf_path=None):
-    # Clean up spacing issues to ensure headers match correctly
     resume_text = "\n".join([line.strip() for line in resume_text.splitlines()])
     sections = {}
     lines = resume_text.splitlines()
 
-    FALSE_HEADERS = set([
-        "resume", "curriculum vitae", "cv", "name", "contact", "contact information"
-    ])
+    FALSE_HEADERS = {"resume", "cv", "curriculum vitae", "name", "contact", "contact information"}
     if lines:
         FALSE_HEADERS.add(lines[0].strip().lower())
 
@@ -221,11 +192,7 @@ def split_resume_into_sections(resume_text, pdf_path=None):
         raw_header = match.group(1).strip()
         match_line_num = resume_text[:match.start()].count("\n")
 
-        if raw_header.lower() in FALSE_HEADERS:
-            continue
-        if len(raw_header.split()) > 5:
-            continue
-        if not raw_header[0].isupper():
+        if raw_header.lower() in FALSE_HEADERS or len(raw_header.split()) > 5 or not raw_header[0].isupper():
             continue
 
         skip_lines = 0
@@ -262,24 +229,29 @@ def split_resume_into_sections(resume_text, pdf_path=None):
         else:
             sections[normalized] = section_text
 
-    # === Inject any pdfplumber headers not found via regex ===
-    for h in high_confidence_headers:
-        if h in VALID_SECTIONS and h not in sections:
-            print(f"[INJECTED] Forcing section '{h}' from pdfplumber headers")
-            sections[h] = ""
+# === Inject any pdfplumber headers not found via regex ===
+        for h in high_confidence_headers:
+            norm = normalize_section_name(h)
+            if norm in VALID_SECTIONS and norm not in sections:
+                print(f"[Fallback] No '{norm}' section found. Trying raw text extraction for {norm} section...")
 
-    # === Inject any pdfplumber headers not found via regex ===
-    for h in high_confidence_headers:
-        if h in VALID_SECTIONS and h not in sections:
-            print(f"[INJECTED] Forcing section '{h}' from pdfplumber headers")
-            sections[h] = ""
+        # Try to find the raw header and extract lines below it
+            pattern = re.compile(rf"{re.escape(h)}", re.IGNORECASE)
+            match = pattern.search(resume_text)
+            if match:
+                start = match.end()
+                end = len(resume_text)
+                section_text = resume_text[start:end].strip()
+                sections[norm] = section_text
+            else:
+                sections[norm] = ""
+
+
+    # Final fallback: if experience is still missing, try regex fallback
+    if "experience" not in sections or not sections["experience"].strip():
+        print("[Fallback] Trying raw text extraction for experience section...")
+        fallback_text = extract_experience_from_raw_text(resume_text)
+        if fallback_text:
+            sections["experience"] = fallback_text
 
     return sections
-
-
-
-
-
-
-
-
