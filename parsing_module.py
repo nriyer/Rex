@@ -219,7 +219,6 @@ def split_resume_into_sections(resume_text, pdf_path=None):
 
     for idx, match in enumerate(matches):
         raw_header = match.group(1).strip()
-        print(f"[HEADER CANDIDATE] '{raw_header}'")  # Debug log to trace every match
         match_line_num = resume_text[:match.start()].count("\n")
 
         if raw_header.lower() in FALSE_HEADERS:
@@ -244,10 +243,8 @@ def split_resume_into_sections(resume_text, pdf_path=None):
         normalized = None
         if raw_header.lower() in high_confidence_headers:
             normalized = normalize_section_name(raw_header)
-            print(f"[FORCED-NORMALIZED] '{raw_header}' → '{normalized}' (from font size match)")
         elif raw_header.lower() in KNOWN_HEADER_PHRASES or any(raw_header.lower() in h for h in high_confidence_headers):
             normalized = normalize_section_name(raw_header)
-            print(f"[NORMALIZED] '{raw_header}' → '{normalized}'")
         else:
             continue
 

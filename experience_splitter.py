@@ -1,80 +1,157 @@
 import re
+import pdfplumber
+from parsing_module import split_resume_into_sections
 
-# Sample experience text for testing (replace with actual parsed "experience" section)
-experience_text = """
-Substance Abuse and Mental Health Administration, Department of HHS  
-Budget Analyst Dec ‘23 - Mar ‘25
+# === Step 1: Extract raw text from PDF ===
+pdf_path = "docs/sample_resume.pdf"
 
-- Conducted data mining of critical human capital information across divisions to support strategic decision-making and hiring status evaluations, assessing effectiveness through comprehensive data analysis procedures to enhance workforce planning.
+with pdfplumber.open(pdf_path) as pdf:
+    resume_text = "\n".join(page.extract_text() for page in pdf.pages if page.extract_text())
 
-- Developed an Excel VBA-based incentive tracking system, integrating engagement analysis and survey design to assess incentive award effectiveness. Implemented automated validation checks and dynamic data processing workflows, increasing data accuracy by 85% and enhancing communication-engagement data insights for decision-making.
+# === Step 2: Try using section parser ===
+parsed_sections = split_resume_into_sections(resume_text, pdf_path=pdf_path)
+print("\n=== Top-Level Resume Sections Extracted ===")
+for k, v in parsed_sections.items():
+    print(f"\n--- {k.upper()} ---")
+    print(v[:500])  # show first 500 chars to preview content
+experience_text = parsed_sections.get("experience", "")
 
-- Engineered a real-time Python-based payroll tracking system, integrating 10+ fund sources and 25 Lines of Accounting, leveraging SQL for data extraction and pandas for analysis, reducing reconciliation time by ~2 hours/month and improving payroll forecasting accuracy.
+# === Step 3: Fallback if experience section is empty ===
+if not experience_text.strip():
+    print("[Fallback] No 'experience' section found. Trying manual keyword search.")
+    lower_resume = resume_text.lower()
+    start = lower_resume.find("experience")
+    experience_text = resume_text[start:] if start != -1 else ""
 
-- Designed and optimized SharePoint-based data management processes, improving workflow automation and document version control for financial reporting.
+    # Optionally cut off at next known section
+    stop_keywords = ["education", "projects", "certifications", "skills"]
+    for kw in stop_keywords:
+        stop = experience_text.lower().find(kw)
+        if stop != -1:
+            experience_text = experience_text[:stop]
+            break
 
-- Conducted financial forecasting and variance analysis for a $165M payroll budget, leading to actionable FTE adjustments and full-year payroll projections, optimizing workforce planning and budget allocation.
-
-- Developed Power BI dashboards to provide real-time insights into budget utilization, payroll trends, and workforce analytics, enabling data-driven decision-making.
-
-- Facilitated cross-functional workshops with stakeholders to gather insights that informed the optimization of decision pathways, resulting in a 30% reduction in processing time for budget approvals.
-
-- Partnered with data science teams to analyze user interactions and optimize AI algorithms, reducing budget forecasting errors by 15% and improving overall accuracy in financial planning.
-
-- Ensured compliance with federal regulations and data privacy laws in all human capital reporting and workforce analytics processes, effectively managing deadlines to ensure timely and accurate reporting.
-"""
-
+# === Splitter ===
 def split_experience_section(text):
-    """
-    Improved splitter: detects various date formats and uses a 2-line window
-    to group job entries (title, org, date, bullets).
-    """
     lines = text.strip().split("\n")
     job_chunks = []
     current_chunk = []
 
-    # Updated date pattern to match:
-    # - Jan '20
-    # - March 2022
-    # - 2020 – 2023
-    # - Embedded formats (e.g., Job Title — Jan 2020 - Feb 2023)
     date_pattern = re.compile(
-        r"((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+['’]?\d{2,4})|"      # e.g. Jan '20 or March 2022
-        r"(\d{4}\s*[-–—]\s*(Present|\d{2,4}))",                                              # e.g. 2020 – 2023
+        r"((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+['’]?\d{2,4})|"
+        r"(\d{4}\s*[-–—]\s*(Present|\d{2,4}))",
         flags=re.IGNORECASE
     )
 
     i = 0
     while i < len(lines):
         line = lines[i]
-
-        # If we find a line that looks like it contains dates, we treat this as the start of a new job
         if date_pattern.search(line):
-            # If we already have a job being built, save it
             if current_chunk:
                 job_chunks.append("\n".join(current_chunk).strip())
                 current_chunk = []
-
-            # Look back up to 2 lines (to get org/title)
-            backtrack_lines = []
             if i >= 2:
-                backtrack_lines = [lines[i-2], lines[i-1]]
+                current_chunk.extend([lines[i-2], lines[i-1]])
             elif i == 1:
-                backtrack_lines = [lines[i-1]]
-            current_chunk.extend(backtrack_lines)
-
+                current_chunk.append(lines[i-1])
         current_chunk.append(line)
         i += 1
 
-    # Add last chunk if exists
     if current_chunk:
         job_chunks.append("\n".join(current_chunk).strip())
 
     return job_chunks
 
 
-# Run test and print results
+# === Parser ===
+def parse_job_entry(chunk):
+    lines = chunk.strip().split("\n")
+    date_pattern = re.compile(
+        r"((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+[‘’']?\d{2,4})|"
+        r"(\d{4}\s*[-–—]\s*(Present|\d{2,4}))",
+        flags=re.IGNORECASE
+    )
+
+    date_line_idx = None
+    date_match = None
+
+    for i, line in enumerate(lines):
+        match = date_pattern.search(line)
+        if match:
+            date_line_idx = i
+            date_match = match
+            break
+
+    if date_line_idx is None:
+        return {
+            "company": None,
+            "title": None,
+            "date_range": None,
+            "bullets": lines
+        }
+
+    date_line = lines[date_line_idx].strip()
+    date_range = date_line[date_match.start():].strip()
+    title = date_line[:date_match.start()].strip()
+    company = lines[date_line_idx - 1].strip() if date_line_idx >= 1 else None
+
+    # 👇 Bullet symbols expanded here
+    bullets = []
+    current_bullet = ""
+
+    for line in lines[date_line_idx + 1:]:
+        striped = line.strip()
+        if striped.startswith(("-", "•", "·")):
+            if current_bullet:
+                bullets.append(current_bullet.strip())
+            current_bullet = striped
+        else:
+            current_bullet += " " + striped
+
+    if current_bullet:
+        bullets.append(current_bullet.strip())
+
+
+    return {
+        "company": company,
+        "title": title,
+        "date_range": date_range,
+        "bullets": bullets
+    }
+
+# === Main Execution ===
 if __name__ == "__main__":
     chunks = split_experience_section(experience_text)
+    # Remove first chunk if it doesn't include any date (likely a leftover header)
+    date_check = re.compile(r"\d{4}")
+    if chunks and not date_check.search(chunks[0]):
+        print("[DEBUG] Removing first non-job chunk (likely a header)")
+        chunks = chunks[1:]
+
+
+    print("\n=== Raw Job Chunks ===")
     for i, chunk in enumerate(chunks):
         print(f"\n--- Job {i+1} ---\n{chunk}\n")
+
+    if chunks:
+        print("\n=== Parsed Job Fields (First Job Only) ===")
+        parsed = parse_job_entry(chunks[0])
+        for k, v in parsed.items():
+            if isinstance(v, list):
+                print(f"{k}:\n" + "\n".join(v) + "\n")
+            else:
+                print(f"{k}:\n{v}\n")
+
+    print("\n=== All Parsed Job Entries ===")
+    parsed_jobs = []
+    for i, chunk in enumerate(chunks):
+        parsed = parse_job_entry(chunk)
+        parsed_jobs.append(parsed)
+
+        print(f"\n--- Job {i + 1} ---")
+        print(f"Company: {parsed['company']}")
+        print(f"Title: {parsed['title']}")
+        print(f"Dates: {parsed['date_range']}")
+        print("Bullets:")
+        for b in parsed["bullets"]:
+            print(f"- {b}")
