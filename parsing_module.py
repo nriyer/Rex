@@ -16,14 +16,26 @@ def clean_extracted_text(text):
     text = re.sub(r'\n+', '\n', text)
     return text.strip()
 
-def extract_text_pdfminer(pdf_path):
+#def extract_text_pdfminer(pdf_path):
+    #try:
+        #raw_text = extract_text(pdf_path)
+        #cleaned_text = clean_extracted_text(raw_text)
+        #return cleaned_text
+    #except Exception as e:
+        #print(f"Error reading PDF with pdfminer: {e}")
+        #return ""
+
+def extract_text_pdfplumber(pdf_path):
+    full_text = ""
     try:
-        raw_text = extract_text(pdf_path)
-        cleaned_text = clean_extracted_text(raw_text)
-        return cleaned_text
+        with pdfplumber.open(pdf_path) as pdf:
+            for page in pdf.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    full_text += page_text + "\n"
     except Exception as e:
-        print(f"Error reading PDF with pdfminer: {e}")
-        return ""
+        print(f"[extract_text_pdfplumber error] {e}")
+    return full_text.strip()
 
 def extract_text_from_docx(docx_path):
     try:
@@ -141,37 +153,25 @@ def extract_experience_from_raw_text(resume_text):
     return match.group(2).strip() if match else ""
 
 # === PDF Header Extractor ===
-def extract_headers_with_pdfplumber(pdf_path, font_size_threshold=13):
-    headers = []
-    try:
-        with pdfplumber.open(pdf_path) as pdf:
-            for page in pdf.pages:
-                for obj in page.extract_words(extra_attrs=["size"]):
-                    if float(obj["size"]) >= font_size_threshold:
-                        line = obj["text"].strip()
-                        if line and line not in headers:
-                            headers.append(line)
-                        if "experience" in line.lower() and "experience" not in headers:
-                            headers.append("Experience")
-    except Exception as e:
-        print(f"[pdfplumber error] {e}")
-    return headers
+# def extract_headers_with_pdfplumber(pdf_path, font_size_threshold=13):
+#     headers = []
+#     try:
+#         with pdfplumber.open(pdf_path) as pdf:
+#             for page in pdf.pages:
+#                 for obj in page.extract_words(extra_attrs=["size"]):
+#                     if float(obj["size"]) >= font_size_threshold:
+#                         line = obj["text"].strip()
+#                         if line and line not in headers:
+#                             headers.append(line)
+#                         if "experience" in line.lower() and "experience" not in headers:
+#                             headers.append("Experience")
+#     except Exception as e:
+#         print(f"[pdfplumber error] {e}")
+#     return headers
 
 # === MAIN PARSER ===
 def split_resume_into_sections(resume_text, pdf_path=None):
-    resume_text = "\n".join([line.strip() for line in resume_text.splitlines()])
-    sections = {}
-    lines = resume_text.splitlines()
-
-    FALSE_HEADERS = {"resume", "cv", "curriculum vitae", "name", "contact", "contact information"}
-    if lines:
-        FALSE_HEADERS.add(lines[0].strip().lower())
-
-    VALID_SECTIONS = {
-        "summary", "skills", "experience", "education",
-        "projects", "certifications", "awards", "publications"
-    }
-
+    # Lowercased header map
     KNOWN_HEADER_PHRASES = {
         "professional summary", "summary",
         "professional skills", "technical skills", "technical abilities", "skills",
@@ -181,77 +181,79 @@ def split_resume_into_sections(resume_text, pdf_path=None):
         "independent learning", "independent projects"
     }
 
-    high_confidence_headers = set()
-    if pdf_path:
-        high_confidence_headers = set(map(str.lower, extract_headers_with_pdfplumber(pdf_path)))
+    VALID_SECTIONS = {
+        "summary", "skills", "experience", "education",
+        "projects", "certifications", "awards", "publications"
+    }
 
-    pattern = re.compile(r"^(?:\s*)([A-Z][A-Za-z\s&/-]{1,40})(?::)?\s*$", re.MULTILINE)
-    matches = list(pattern.finditer(resume_text))
+    def normalize_section_name(header_text):
+        text = header_text.lower().strip()
+        mapping = {
+            "summary": ["summary", "professional summary"],
+            "skills": ["skills", "technical skills", "professional skills", "technical abilities"],
+            "experience": ["experience", "work experience", "employment history", "professional experience", "work history", "work"],
+            "education": ["education", "academic background", "education and certifications", "certifications and education"],
+            "projects": ["projects", "relevant projects", "independent projects"],
+            "certifications": ["certifications", "certificates", "licenses"],
+            "awards": ["awards", "honors"],
+            "publications": ["publications", "research"]
+        }
+        for key, variants in mapping.items():
+            if text in variants:
+                return key
+        return None
 
-    for idx, match in enumerate(matches):
-        raw_header = match.group(1).strip()
-        match_line_num = resume_text[:match.start()].count("\n")
+    lines = resume_text.splitlines()
+    sections = {}
+    current_section = None
+    buffer = []
 
-        if raw_header.lower() in FALSE_HEADERS or len(raw_header.split()) > 5 or not raw_header[0].isupper():
-            continue
+    for line in lines:
+        header_candidate = line.strip().lower()
+        if header_candidate in KNOWN_HEADER_PHRASES:
+            normalized = normalize_section_name(header_candidate)
+            if normalized in VALID_SECTIONS:
+                if current_section and buffer:
+                    sections[current_section] = "\n".join(buffer).strip()
+                    buffer = []
+                current_section = normalized
+                continue
+        if current_section:
+            buffer.append(line)
 
-        skip_lines = 0
-        next_line_idx = match_line_num + 1
-        if next_line_idx < len(lines) and re.match(r"^-{3,}$", lines[next_line_idx].strip()):
-            skip_lines = 1
-            next_line_idx += 1
+    if current_section and buffer:
+        sections[current_section] = "\n".join(buffer).strip()
 
-        prev_line = lines[match_line_num - 1].strip() if match_line_num > 0 else ""
-        next_line = lines[next_line_idx].strip() if next_line_idx < len(lines) else ""
+        # === [GPT Fallback] Check for missing key sections ===
+    required_sections = {"summary", "skills", "experience", "education", "projects", "certifications", "awards", "publications"}
+    missing = required_sections - set(sections.keys())
 
-        if prev_line.startswith(("•", "-", "*")) or next_line.startswith(("•", "-", "*")):
-            continue
+    if missing:
+        print(f"[GPT fallback] Missing sections: {missing}")
+        # Grab all candidate lines
+        unknown_candidates = []
+        for line in lines:
+            line_clean = line.strip().lower()
+            if (
+                1 < len(line_clean) < 60 and
+                not line.startswith("•") and
+                not line.startswith("-") and
+                not any(char.isdigit() for char in line) and
+                line_clean not in KNOWN_HEADER_PHRASES
+            ):
+                unknown_candidates.append(line.strip())
 
-        normalized = None
-        if raw_header.lower() in high_confidence_headers:
-            normalized = normalize_section_name(raw_header)
-        elif raw_header.lower() in KNOWN_HEADER_PHRASES or any(raw_header.lower() in h for h in high_confidence_headers):
-            normalized = normalize_section_name(raw_header)
-        else:
-            continue
+        # Call GPT to classify them
+        from llm_enhancer import classify_unknown_headers_with_gpt
+        classified = classify_unknown_headers_with_gpt(unknown_candidates)
 
-        if normalized not in VALID_SECTIONS:
-            continue
-
-        start = match.end()
-        if skip_lines:
-            start = resume_text.find('\n', start) + 1
-        end = matches[idx + 1].start() if idx + 1 < len(matches) else len(resume_text)
-        section_text = resume_text[start:end].strip()
-
-        if normalized in sections:
-            sections[normalized] += "\n" + section_text
-        else:
-            sections[normalized] = section_text
-
-# === Inject any pdfplumber headers not found via regex ===
-        for h in high_confidence_headers:
-            norm = normalize_section_name(h)
-            if norm in VALID_SECTIONS and norm not in sections:
-                print(f"[Fallback] No '{norm}' section found. Trying raw text extraction for {norm} section...")
-
-        # Try to find the raw header and extract lines below it
-            pattern = re.compile(rf"{re.escape(h)}", re.IGNORECASE)
-            match = pattern.search(resume_text)
-            if match:
-                start = match.end()
+        for raw, normalized in classified.items():
+            if normalized in missing and normalized not in sections:
+                print(f"[GPT] Matched '{raw}' → '{normalized}'")
+                start = resume_text.lower().find(raw.lower())
                 end = len(resume_text)
                 section_text = resume_text[start:end].strip()
-                sections[norm] = section_text
-            else:
-                sections[norm] = ""
-
-
-    # Final fallback: if experience is still missing, try regex fallback
-    if "experience" not in sections or not sections["experience"].strip():
-        print("[Fallback] Trying raw text extraction for experience section...")
-        fallback_text = extract_experience_from_raw_text(resume_text)
-        if fallback_text:
-            sections["experience"] = fallback_text
+                sections[normalized] = section_text
 
     return sections
+

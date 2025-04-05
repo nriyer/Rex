@@ -97,6 +97,49 @@ def enhance_resume_experience(pdf_path, job_keywords, model="gpt-4"):
 
     return format_enhanced_experience(enhanced_jobs)
 
+def classify_unknown_headers_with_gpt(header_candidates: list[str]) -> dict:
+    """
+    Given a list of unknown section headers, classify them into known resume sections
+    using GPT. Returns a dict mapping original header → normalized section name.
+    """
+    if not header_candidates:
+        return {}
+
+    prompt = f"""You are a resume parser. Classify each of the following resume section headers
+into one of: summary, skills, experience, education, projects, certifications, awards, publications.
+If it doesn't fit any of those, return 'other'. Respond in JSON format like this:
+
+{{ 'Key Projects': 'projects', 'Technical Skills': 'skills' }}
+
+Headers to classify:
+{chr(10).join(f"- {h}" for h in header_candidates)}
+"""
+
+    try:
+        client = setup_openai()
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0
+        )
+        raw_output = response.choices[0].message.content
+        parsed_dict = eval(raw_output)
+
+        return {
+            k: v.lower().strip()
+            for k, v in parsed_dict.items()
+            if v.lower().strip() in {
+                "summary", "skills", "experience", "education", "projects",
+                "certifications", "awards", "publications"
+            }
+        }
+
+    except Exception as e:
+        print(f"[GPT classification error] {e}")
+        return {}
+
+
+
 # === Entry Point for Manual Testing ===
 if __name__ == "__main__":
     job_keywords = ["SQL", "Python", "Power BI", "budget forecasting", "reporting automation", "workforce analytics"]
