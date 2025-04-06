@@ -1,59 +1,42 @@
 import re
-import pdfplumber
-from parsing_module import split_resume_into_sections
 
-# === Step 1: Extract raw text from PDF ===
-pdf_path = "docs/sample_resume.pdf"
+# === Constants ===
 
-with pdfplumber.open(pdf_path) as pdf:
-    resume_text = "\n".join(page.extract_text() for page in pdf.pages if page.extract_text())
+DATE_PATTERN = re.compile(
+    r"((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+[‘’']?\d{2,4})|"
+    r"(\d{4}\s*[-–—]\s*(Present|\d{2,4}))",
+    flags=re.IGNORECASE
+)
 
-# === Step 2: Try using section parser ===
-parsed_sections = split_resume_into_sections(resume_text, pdf_path=pdf_path)
-print("\n=== Top-Level Resume Sections Extracted ===")
-for k, v in parsed_sections.items():
-    print(f"\n--- {k.upper()} ---")
-    print(v[:500])  # show first 500 chars to preview content
-experience_text = parsed_sections.get("experience", "")
+STOP_KEYWORDS = ["summary", "projects", "education", "skills", "certifications"]
 
-# === Step 3: Fallback if experience section is empty ===
-if not experience_text.strip():
-    print("[Fallback] No 'experience' section found. Trying manual keyword search.")
-    lower_resume = resume_text.lower()
-    start = lower_resume.find("experience")
-    experience_text = resume_text[start:] if start != -1 else ""
+# === Split Experience Section ===
 
-    # Optionally cut off at next known section
-    stop_keywords = ["education", "projects", "certifications", "skills"]
-    for kw in stop_keywords:
-        stop = experience_text.lower().find(kw)
-        if stop != -1:
-            experience_text = experience_text[:stop]
-            break
-
-# === Splitter ===
 def split_experience_section(text):
     lines = text.strip().split("\n")
     job_chunks = []
     current_chunk = []
 
-    date_pattern = re.compile(
-        r"((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+['’]?\d{2,4})|"
-        r"(\d{4}\s*[-–—]\s*(Present|\d{2,4}))",
-        flags=re.IGNORECASE
-    )
-
     i = 0
     while i < len(lines):
-        line = lines[i]
-        if date_pattern.search(line):
+        line = lines[i].strip()
+        if not line:
+            i += 1
+            continue
+
+        if DATE_PATTERN.search(line):
             if current_chunk:
-                job_chunks.append("\n".join(current_chunk).strip())
+                # Only save if it has more than 1 line (skip floating company-only chunks)
+                if len(current_chunk) > 1:
+                    job_chunks.append("\n".join(current_chunk).strip())
                 current_chunk = []
+
+            # Grab 1-2 lines before date (title/company)
             if i >= 2:
-                current_chunk.extend([lines[i-2], lines[i-1]])
+                current_chunk.extend([lines[i-2].strip(), lines[i-1].strip()])
             elif i == 1:
-                current_chunk.append(lines[i-1])
+                current_chunk.append(lines[i-1].strip())
+
         current_chunk.append(line)
         i += 1
 
@@ -62,21 +45,22 @@ def split_experience_section(text):
 
     return job_chunks
 
+# === Parse Individual Job Entry ===
 
-# === Parser ===
 def parse_job_entry(chunk):
+    """
+    Extracts structured fields from a job chunk using:
+    - title + date line
+    - company line above
+    - multi-line bullets
+    """
     lines = chunk.strip().split("\n")
-    date_pattern = re.compile(
-        r"((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+[‘’']?\d{2,4})|"
-        r"(\d{4}\s*[-–—]\s*(Present|\d{2,4}))",
-        flags=re.IGNORECASE
-    )
 
     date_line_idx = None
     date_match = None
 
     for i, line in enumerate(lines):
-        match = date_pattern.search(line)
+        match = DATE_PATTERN.search(line)
         if match:
             date_line_idx = i
             date_match = match
@@ -84,24 +68,35 @@ def parse_job_entry(chunk):
 
     if date_line_idx is None:
         return {
-            "company": None,
-            "title": None,
-            "date_range": None,
+            "company": "",
+            "title": "",
+            "date_range": "",
             "bullets": lines
         }
 
     date_line = lines[date_line_idx].strip()
     date_range = date_line[date_match.start():].strip()
     title = date_line[:date_match.start()].strip()
-    company = lines[date_line_idx - 1].strip() if date_line_idx >= 1 else None
+    company = lines[date_line_idx - 1].strip() if date_line_idx >= 1 else ""
 
-    # 👇 Bullet symbols expanded here
     bullets = []
     current_bullet = ""
 
     for line in lines[date_line_idx + 1:]:
         striped = line.strip()
-        if striped.startswith(("-", "•", "·")):
+
+        # === STOP if it's a likely new company name (e.g. 'FrontStream') ===
+        if (
+            striped and
+            not striped.startswith(("•", "-", "·")) and
+            len(striped.split()) <= 3 and
+            striped[0].isupper() and
+            not any(char in striped for char in ["@", "•", "-", "·"]) and
+            striped.count(",") == 0
+        ):
+            break
+
+        if striped.startswith(("•", "-", "·")):
             if current_bullet:
                 bullets.append(current_bullet.strip())
             current_bullet = striped
@@ -111,47 +106,9 @@ def parse_job_entry(chunk):
     if current_bullet:
         bullets.append(current_bullet.strip())
 
-
     return {
         "company": company,
         "title": title,
         "date_range": date_range,
         "bullets": bullets
     }
-
-# === Main Execution ===
-if __name__ == "__main__":
-    chunks = split_experience_section(experience_text)
-    # Remove first chunk if it doesn't include any date (likely a leftover header)
-    date_check = re.compile(r"\d{4}")
-    if chunks and not date_check.search(chunks[0]):
-        print("[DEBUG] Removing first non-job chunk (likely a header)")
-        chunks = chunks[1:]
-
-
-    print("\n=== Raw Job Chunks ===")
-    for i, chunk in enumerate(chunks):
-        print(f"\n--- Job {i+1} ---\n{chunk}\n")
-
-    if chunks:
-        print("\n=== Parsed Job Fields (First Job Only) ===")
-        parsed = parse_job_entry(chunks[0])
-        for k, v in parsed.items():
-            if isinstance(v, list):
-                print(f"{k}:\n" + "\n".join(v) + "\n")
-            else:
-                print(f"{k}:\n{v}\n")
-
-    print("\n=== All Parsed Job Entries ===")
-    parsed_jobs = []
-    for i, chunk in enumerate(chunks):
-        parsed = parse_job_entry(chunk)
-        parsed_jobs.append(parsed)
-
-        print(f"\n--- Job {i + 1} ---")
-        print(f"Company: {parsed['company']}")
-        print(f"Title: {parsed['title']}")
-        print(f"Dates: {parsed['date_range']}")
-        print("Bullets:")
-        for b in parsed["bullets"]:
-            print(f"- {b}")
