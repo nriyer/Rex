@@ -12,7 +12,7 @@ from parsing_module import (
     split_resume_into_sections,
 )
 
-from llm_utils import enhance_section, filter_relevant_keywords
+from Rough.llm_utils import enhance_section, filter_relevant_keywords
 from llm_enhancer import enhance_resume_experience
 
 
