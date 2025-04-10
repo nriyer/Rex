@@ -96,7 +96,7 @@ def fallback_classify_with_gpt(keyword: str, model="gpt-4") -> str:
         response = client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.2,
+            temperature=0.0,
         )
         label = response.choices[0].message.content.strip().lower()
         return label if label in CATEGORIES else "other"
