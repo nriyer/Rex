@@ -32,6 +32,10 @@ def normalize_keyword(keyword: str) -> str:
         "salesforce crm": "salesforce",
     }
     
+    # Strip plural if base word ends in 's' and singular form is a real word
+    if keyword.endswith("s") and len(keyword) > 4:
+        keyword = keyword[:-1]
+
     return synonyms.get(keyword, keyword)
 
 

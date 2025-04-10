@@ -2,6 +2,11 @@ import re
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+import json
+from hashlib import md5
+from pathlib import Path
+from typing import List
+from keyword_classifier import normalize_keyword
 
 # === STOPWORDS for filtering generic words ===
 STOPWORDS = {
@@ -29,7 +34,14 @@ KEYWORD_SYNONYMS = {
 
 def normalize_token(token: str) -> str:
     token = token.lower().strip()
+
+    # Always try naive plural to singular if ends in 's'
+    if token.endswith("s") and len(token) > 3:
+        token = token[:-1]
+
     return KEYWORD_SYNONYMS.get(token, token)
+
+
 
 # === Extract clean keywords from job description text ===
 def extract_keywords(job_text: str) -> set:
@@ -39,7 +51,7 @@ def extract_keywords(job_text: str) -> set:
     tokens = re.findall(r"\b[a-zA-Z][a-zA-Z0-9\-]{2,}\b", job_text)
 
     keywords = set(
-        normalize_token(t) for t in tokens
+        normalize_keyword(t) for t in tokens
         if t not in STOPWORDS
         and t not in EXTENDED_STOPWORDS
         and not t.isdigit()
@@ -49,8 +61,24 @@ def extract_keywords(job_text: str) -> set:
     return keywords
 
 # === GPT filter to remove irrelevant keywords ===
-def filter_relevant_keywords(all_keywords, model="gpt-4"):
-    filtered_input = [k for k in all_keywords if len(k) > 3]
+FILTER_CACHE_PATH = Path("filtered_keywords_cache.json")
+if FILTER_CACHE_PATH.exists():
+    with open(FILTER_CACHE_PATH, "r") as f:
+        filter_cache = json.load(f)
+else:
+    filter_cache = {}
+
+def filter_relevant_keywords(all_keywords: List[str], model="gpt-4", job_id=None, debug: bool = False) -> List[str]:
+    # === Normalize and dedupe ===
+    filtered_input = sorted(set(normalize_keyword(k) for k in all_keywords if len(k) > 3))
+    
+    # === Use job hash if no ID provided ===
+    if job_id is None:
+        job_id = md5(" ".join(filtered_input).encode()).hexdigest()
+
+    # === Cache hit ===
+    if job_id in filter_cache:
+        return filter_cache[job_id]
 
     prompt = (
         "You are helping clean a list of job posting keywords for a resume enhancement tool.\n"
@@ -81,16 +109,28 @@ def filter_relevant_keywords(all_keywords, model="gpt-4"):
     response = client.chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": prompt}],
-        temperature=0.2,
+        temperature=0.0,
     )
 
     try:
         filtered = eval(response.choices[0].message.content.strip())
-        return [k.lower().strip() for k in filtered]
+        filtered = [k.lower().strip() for k in filtered]
+
+        if debug:
+            print(f"\n🧠 Filtered Keywords:\n{filtered}\n")
+            removed = set(filtered_input) - set(filtered)
+            print(f"❌ Removed Keywords:\n{sorted(removed)}\n")
+
+        # ✅ Cache the result
+        filter_cache[job_id] = filtered
+        with open(FILTER_CACHE_PATH, "w") as f:
+            json.dump(filter_cache, f, indent=2)
+
+        return filtered
+
     except Exception as e:
         print(f"[GPT keyword filter error] {e}")
         return all_keywords
-
     
 # === Match GPT-filtered keywords against full resume text ===
 def compute_keyword_match(resume_text: str, job_text: str, model="gpt-4") -> dict:
