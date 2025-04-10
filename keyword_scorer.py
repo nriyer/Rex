@@ -37,12 +37,17 @@ def compute_category_matches(
 
         percent = round((matched / total) * 100, 1) if total > 0 else 0.0
 
-        results[category] = {
-            "matched" : matched,
-            "total" : total,
-            "percent" : percent
-        }
+        unmatched_in_category = keywords_set - matched_in_category
 
+        results[category] = {
+            "matched": matched,
+            "total": total,
+            "percent": percent,
+            "matched_words": sorted(matched_in_category),
+            "unmatched_words": sorted(unmatched_in_category)
+     }
+
+     
     return results
 
 def compute_weighted_score(category_stats: Dict[str, Dict[str, float]]) -> Dict[str, float]:
@@ -86,6 +91,27 @@ def score_keywords(
     """
     category_stats = compute_category_matches(classified_keywords, matched_keywords)
     weighted_scores = compute_weighted_score(category_stats)
+
+     # ✅ Inserted block here:
+    print("\n📊 Detailed Scoring Breakdown:")
+    for category, score in weighted_scores.items():
+        matched = category_stats.get(category, {}).get("matched", 0)
+        total = category_stats.get(category, {}).get("total", 0)
+        percent = category_stats.get(category, {}).get("percent", 0)
+        weight = CATEGORY_WEIGHTS.get(category, 1.0)
+
+        print(f"\n{category.upper()}")
+        print(f"  Matched: {matched} / {total}")
+        print(f"  Match %: {percent}%")
+        print(f"  Weight : {weight}")
+        print(f"  Score  : {score}")
+
+        matched_words = category_stats.get(category, {}).get("matched_words", [])
+        unmatched_words = category_stats.get(category, {}).get("unmatched_words", [])
+
+        print(f"  ✅ Matched Terms   : {', '.join(matched_words) if matched_words else 'None'}")
+        print(f"  ❌ Unmatched Terms : {', '.join(unmatched_words) if unmatched_words else 'None'}")
+
     return weighted_scores
 
 def get_matched_keywords_by_category(

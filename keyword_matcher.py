@@ -55,21 +55,25 @@ def filter_relevant_keywords(all_keywords, model="gpt-4"):
     prompt = (
         "You are helping clean a list of job posting keywords for a resume enhancement tool.\n"
         "The list below was extracted from a job description. It may apply to ANY kind of job: "
-        "data analyst, warehouse worker, psychologist, etc.\n\n"
+        "\"data analyst, warehouse worker, psychologist, etc.\"\n\n"
         f"List:\n{filtered_input}\n\n"
-        "🎯 Your goal is to keep ONLY ~25 keywords that are:\n"
+        "🎯 Your goal is to keep ONLY ~40 keywords that are:\n"
         "- hard skills (e.g., Python, Excel, SQL, CPR, logistics)\n"
         "- tools or platforms (e.g., Salesforce, Tableau)\n"
         "- certifications or licenses (e.g., PMP, CPA, RN, CDL)\n"
         "- acronyms or capitalized technical terms (e.g., GAAP, HRIS, HIPAA)\n"
         "- domain-specific phrases (e.g., inventory control, behavioral therapy)\n\n"
         "🚫 Strictly REMOVE anything that is:\n"
-        "- a soft skill (e.g., communication, leadership)\n"
-        "- a vague verb or adjective (e.g., tailored, understand, proactive, regular)\n"
-        "- filler or connector language (e.g., regularly, continuously, effectively)\n\n"
+        "- a vague verb or adjective (e.g., tailored, proactive)\n"
+        "- filler or connector language (e.g., regularly, effectively)\n\n"
+        "✅ Always include terms that refer to credentials:\n"
+        "- Degrees like 'bachelor', 'bachelor’s', 'masters', 'mba', 'phd', 'degree'\n"
+        "- Certifications like 'pmp', 'cpa', 'cissp', etc.\n"
+        "❗️These must be retained even if they appear only once in the list.\n\n"
         "✅ Return only the cleaned list as a valid Python list of lowercase strings.\n"
         "No explanations. Format as a Python list (e.g., ['python', 'sql', 'excel'])."
     )
+
 
     load_dotenv()
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))

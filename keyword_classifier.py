@@ -1,6 +1,17 @@
 # keyword_classifier.py
+import json
+from pathlib import Path
 
 from typing import List, Dict
+
+# Persistent GPT classification cache
+CACHE_PATH = Path("classified_keywords_cache.json")
+if CACHE_PATH.exists():
+    with open(CACHE_PATH, "r") as f:
+        keyword_cache = json.load(f)
+else:
+    keyword_cache = {}
+
 
 # === Normalize fuzzy keyword variants ===
 def normalize_keyword(keyword: str) -> str:
@@ -82,6 +93,11 @@ load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def fallback_classify_with_gpt(keyword: str, model="gpt-4") -> str:
+    norm_kw = keyword.lower().strip()
+    
+    if norm_kw in keyword_cache:
+        return keyword_cache[norm_kw]
+    
     prompt = (
         f"Classify the term '{keyword}' into one of the following categories:\n"
         "1. tool_platform\n"
@@ -97,9 +113,22 @@ def fallback_classify_with_gpt(keyword: str, model="gpt-4") -> str:
             model=model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
+
         )
         label = response.choices[0].message.content.strip().lower()
-        return label if label in CATEGORIES else "other"
+        label = label.replace(".", "").replace("\"", "").replace("'", "").strip()
+
+        # Force fallback to 'other' if it doesn't match any known category
+        if label not in CATEGORIES:
+            print(f"[Fallback Warning] Unexpected GPT label: '{label}' → defaulting to 'other'")
+            label = "other"
+        
+        keyword_cache[norm_kw] = label
+        with open(CACHE_PATH, "w") as f:
+            json.dump(keyword_cache, f, indent=2)
+
+        return label
+    
     except Exception as e:
         print(f"[GPT fallback error] {e}")
         return "other"

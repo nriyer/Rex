@@ -1,0 +1,15 @@
+{
+  "data analyst": "domain_knowledge",
+  "systems": "domain_knowledge",
+  "acquisition": "domain_knowledge",
+  "maintenance": "domain_knowledge",
+  "benchmarks": "domain_knowledge",
+  "trends": "domain_knowledge",
+  "workforce": "domain_knowledge",
+  "power": "domain_knowledge",
+  "expertise": "domain_knowledge",
+  "reports": "domain_knowledge",
+  "advanced": "soft_skill",
+  "drive": "soft_skill",
+  "experience": "soft_skill"
+}
