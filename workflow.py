@@ -13,7 +13,7 @@ from parsing_module import (
 )
 
 from Rough.llm_utils import enhance_section, filter_relevant_keywords
-from llm_enhancer import enhance_resume_experience
+from Rough.old_llm_enhancer import enhance_resume_experience
 
 
 def extract_text_from_url(url):

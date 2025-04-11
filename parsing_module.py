@@ -111,7 +111,7 @@ def split_resume_into_sections(resume_text, pdf_path=None):
                 unknown_candidates.append(line.strip())
 
         try:
-            from llm_enhancer import classify_unknown_headers_with_gpt
+            from Rough.old_llm_enhancer import classify_unknown_headers_with_gpt
             classified = classify_unknown_headers_with_gpt(unknown_candidates)
         except ImportError:
             print("[Warning] Could not import GPT fallback. Skipping header classification.")
