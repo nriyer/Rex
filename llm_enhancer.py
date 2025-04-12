@@ -27,9 +27,10 @@ You must naturally incorporate the following missing keywords into the summary, 
 {", ".join(missing_keywords)}
 
 🎯 Guidelines:
-- Keep the improved summary under 100 words
+- Keep the improved summary under 60 words
 - Focus on integrating missing *tools, certifications, or domain expertise*
 - Keep tone professional, clear, and concise
+- **Avoid redundancy 
 - DO NOT fabricate achievements or job titles
 
 Return ONLY the enhanced summary. Do not include explanations or headers.
