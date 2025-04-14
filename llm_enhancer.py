@@ -92,6 +92,7 @@ Below is a list of missing keywords from the job description:
 - If the existing section includes soft skills as a subcategory, only add soft skills to that portion.
 - Avoid fabricating new skills unless they are *clearly implied* by the original.
 - DO NOT repeat or re-list skills already present.
+- **If the skills section is organized by category, rename the category headers to align with the key themes and terminology of the job description.**
 - {format_instruction}
 
 Return only the final enhanced skills section. No explanations.
