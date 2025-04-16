@@ -4,3 +4,7 @@ python-docx
 spacy
 nltk
 Flask
+openai
+pdfplumber
+docx2txt
+jinja2
