@@ -1,102 +1,76 @@
 import os
-import ast
-from bs4 import BeautifulSoup
-import requests
+from dotenv import load_dotenv
 
-from parsing_module import (
-    extract_text_pdfminer,
-    extract_text_from_docx,
-    extract_text_from_txt,
-    extract_keywords,
-    calculate_keyword_match,
-    split_resume_into_sections,
+from parsing_module import split_resume_into_sections
+from experience_splitter import split_experience_section, parse_job_entry
+from keyword_matcher import extract_keywords, filter_relevant_keywords, compute_keyword_match
+from keyword_classifier import classify_keywords
+from keyword_scorer import score_keywords
+from llm_enhancer import (
+    enhance_summary_with_gpt,
+    enhance_skills_with_gpt,
+    enhance_experience_job
 )
+from resume_formatter import format_experience_section, assemble_resume
 
-from Rough.llm_utils import enhance_section, filter_relevant_keywords
-from Rough.old_llm_enhancer import enhance_resume_experience
+load_dotenv()
 
+def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple[str, dict]:
+    """
+    Executes the full resume enhancement pipeline and scoring logic.
+    Returns enhanced resume string and a scoring summary dictionary.
+    """
+    # Step 1: Parse resume sections
+    sections = split_resume_into_sections(resume_text)
+    summary_text = sections.get("summary", "")
+    skills_text = sections.get("skills", "")
+    experience_text = sections.get("experience", "")
+    education_text = sections.get("education", "Available upon request")
 
-def extract_text_from_url(url):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        for element in soup(["script", "style"]):
-            element.decompose()
-        text = soup.get_text(separator='\n')
-        lines = (line.strip() for line in text.splitlines())
-        cleaned_text = '\n'.join(line for line in lines if line)
-        return cleaned_text
-    except Exception as e:
-        print(f"Error reading job posting from URL: {e}")
-        return ""
+    # Step 2: Extract and filter job description keywords
+    raw_keywords = extract_keywords(job_posting)
+    filtered_keywords = filter_relevant_keywords(list(raw_keywords))
+    classified_keywords = classify_keywords(filtered_keywords)
 
+    # Step 3: Compute pre-enhancement keyword match and score
+    pre_match = compute_keyword_match(resume_text, job_posting)
+    pre_scores = score_keywords(classified_keywords, pre_match["matched_keywords"])
 
-def process_resume(file_path):
-    ext = os.path.splitext(file_path)[1].lower()
-    if ext == ".pdf":
-        return extract_text_pdfminer(file_path)
-    elif ext == ".docx":
-        return extract_text_from_docx(file_path)
-    elif ext == ".txt":
-        return extract_text_from_txt(file_path)
-    else:
-        raise ValueError("Unsupported file format for resume.")
+    # Step 4: Enhance each resume section
+    enhanced_summary = enhance_summary_with_gpt(summary_text, pre_match["missing_keywords"])
+    enhanced_skills = enhance_skills_with_gpt(skills_text, pre_match["missing_keywords"])
 
+    experience_chunks = split_experience_section(experience_text)
+    enhanced_jobs = []
+    for chunk in experience_chunks:
+        parsed_job = parse_job_entry(chunk)
+        enhanced_job = enhance_experience_job(parsed_job, pre_match["missing_keywords"], job_posting)
+        enhanced_jobs.append(enhanced_job)
 
-def process_job_posting(input_text_or_url):
-    if input_text_or_url.startswith("http"):
-        return extract_text_from_url(input_text_or_url)
-    else:
-        return input_text_or_url
+    # Step 5: Format sections + assemble resume
+    formatted_experience = format_experience_section(enhanced_jobs)
+    final_resume = assemble_resume(
+        summary=enhanced_summary,
+        skills=enhanced_skills,
+        experience=formatted_experience,
+        education=education_text
+    )
 
+    # Step 6: Post-enhancement scoring
+    post_match = compute_keyword_match(final_resume, job_posting)
+    post_scores = score_keywords(classified_keywords, post_match["matched_keywords"])
 
-def run_enhancement_pipeline(resume_file, job_input):
-    resume_text = process_resume(resume_file)
-    sections = split_resume_into_sections(resume_text, pdf_path=resume_file)
+    # Step 7: Return final resume + score report
+    score_report = {
+        "before": {
+            "match_percent": pre_match["match_percent"],
+            "score_by_category": pre_scores
+        },
+        "after": {
+            "match_percent": post_match["match_percent"],
+            "score_by_category": post_scores
+        },
+        "missing_keywords_after": post_match["missing_keywords"]
+    }
 
-    resume_keywords = extract_keywords(resume_text)
-    job_text = process_job_posting(job_input)
-    job_keywords = extract_keywords(job_text)
-
-    match_percentage = calculate_keyword_match(resume_keywords, job_keywords)
-    enhanced_sections = {}
-
-    if match_percentage < 80:
-        missing_keywords = job_keywords - resume_keywords
-
-    # Try to enhance 'experience' using the special enhancer
-    if "experience" in sections:
-        try:
-            print("[⚙️] Enhancing 'experience' section using LLM enhancer...")
-            enhanced_experience = enhance_resume_experience(resume_file, list(job_keywords))
-            enhanced_sections["experience"] = enhanced_experience
-            print("[✅] Experience section enhanced with LLM Enhancer.\n")
-        except Exception as e:
-            print(f"[⚠️] LLM experience enhancement failed. Falling back to default logic.\n{e}")
-
-    # Enhance the rest of the sections
-    for section_name, section_text in sections.items():
-        if section_name == "experience" and "experience" in enhanced_sections:
-            continue
-
-        prompt_keywords_str = filter_relevant_keywords(
-            extract_keywords(section_text),
-            job_keywords,
-            job_text
-        )
-        try:
-            section_keywords = ast.literal_eval(prompt_keywords_str)
-        except:
-            section_keywords = []
-
-        enhanced_text = enhance_section(
-            section_name,
-            section_text,
-            section_keywords,
-            job_text
-        )
-
-        enhanced_sections[section_name] = enhanced_text
-
-    return enhanced_sections
+    return final_resume, score_report

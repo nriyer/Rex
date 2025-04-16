@@ -1,6 +1,6 @@
 # entrypoint.py
 
-from workflow import run_enhancement_pipeline
+from Rough.old_workflow import run_enhancement_pipeline
 from environment import setup_environment
 
 if __name__ == "__main__":

@@ -157,7 +157,9 @@ You are enhancing the bullet points of a single job from a professional resume.
 - Do not fabricate job titles or accomplishments.
 - Preserve bullet format and keep each one concise and results-oriented.
 - Avoid generic filler (e.g., “responsible for”, “helped with”, “worked on”).
-
+-*Trim total bullet count to 6 or fewer, combining similar ideas if needed. Keep ONLY the most impactful, quantifiable, and relevant accomplishments, based on what's most relevant to JOB POSTING.*
+-Each bullet should be 1 line long, unless absolutely necessary to preserve clarity.
+-*If metrics or quantifiable outcomes are implied or present, highlight them clearly. **Do not fabricate numbers or results** — only emphasize what’s already supported.*
 Return ONLY the enhanced bullet points. Maintain bullet format.
     """.strip()
 
