@@ -1,0 +1,60 @@
+SUMMARY
+-------
+Corporate Federal Data Analyst with a degree and 4+ years of experience in human capital analytics, talent acquisition, and workforce strategy. Proficient in SQL, Python, Tableau, Power BI, and HRIS tools. Demonstrated success in maintaining competitive benchmarks, auditing, and enhancing HR processes through data-driven decision-making, reporting automation, and visualization. Proven ability to collaborate on recruiting strategies and tool maintenance.
+
+SKILLS
+------
+---
+● Data Analytics & Visualization Tools: SQL · Python · Tableau · Power BI · Advanced Excel · Advanced MS Office Suite · HRIS
+● Talent Acquisition & Workforce Strategy: HR Metrics · Hiring Pipeline Analytics · Employee Retention Analysis · Workforce Planning · Recruiting · Benchmarking
+● Data Management, Integrity & Maintenance: Data Mining · Data Cleaning · Quality Assurance · Database Management · Process Optimization · Audit
+● Reporting, Decision Support & Competitive Insights: Ad Hoc Reporting · Dashboard Development · Executive Presentations · Stakeholder Communication · Trend Analysis · Large Dataset Processing
+● Process Automation, Compliance & Security: Workflow Automation · Data Privacy & Security · Federal HR Policy Compliance · HRIS Maintenance
+● Strategic Corporate Decision Making: Data-Driven Recommendations · Proactive Problem-Solving · Talent Strategy Development
+---
+
+EXPERIENCE
+----------
+📌 Budget Analyst at Substance Abuse and Mental Health Administration, Department of HHS Dec '23 - Mar '25
+• Leveraged data mining to extract critical human capital information, supporting strategic decision-making and talent acquisition through comprehensive data analysis and workforce planning.
+• Engineered an Excel VBA-based incentive tracking tool, integrating engagement analysis to assess award effectiveness, improving data accuracy by 85%, and enhancing data-driven decision-making.
+• Developed a Python-based payroll tracking system, integrating multiple fund sources and leveraging SQL for data extraction, reducing reconciliation time by ~2 hours/month and improving payroll forecasting accuracy.
+• Optimized SharePoint-based data management processes, enhancing workflow automation and document version control, supporting audit and maintenance of financial reports.
+• Conducted financial forecasting for a $165M payroll budget, leading to actionable FTE adjustments and full-year payroll projections, optimizing workforce strategy and budget allocation.
+• Collaborated with data science teams to optimize AI algorithms, reducing budget forecasting errors by 15%, ensuring competitive and accurate financial planning in compliance with federal regulations.
+
+📌 Budget Analyst at CRI – Department of the Interior Mar '21 - Dec '23
+• · Developed and maintained data quality improvement strategies, boosting financial data accuracy by 20% and supporting corporate decision-making through precise reporting.
+• · Collaborated with cross-functional IT and Finance teams to improve financial database integration, enhancing analytics workflows and supporting competitive talent acquisition strategies.
+• · Streamlined reporting processes using Python and SQL for workflow automation, reducing manual work by 15% and aiding in the maintenance of People Analytics Dashboards.
+• · Established standardized annotation guidelines for financial reporting, ensuring consistency in data analysis, AI training datasets, and aiding in HRIS system audits.
+• · Leveraged data insights to drive equitable, data-driven strategies, attracting and retaining top talent and supporting industry best practices.
+• · Assisted in the development and maintenance of people data, identifying trends and comparing them to internal and external benchmarks.
+
+📌 Accounting Analyst at Cresa Dec '20 - Mar '21
+• Leveraged data analysis tools to dissect expense trends and revenue forecasts, providing data-driven insights to support corporate decision-making.
+• Collaborated with cross-functional teams to reconcile financial data, ensuring accurate reporting on budget allocations and marketing expenditures.
+• Conducted regular audits of financial data, maintaining the integrity of reports and aiding in the development of competitive strategies.
+• Utilized HRIS systems and Excel for data analysis, contributing to the acquisition and retention of top talent through informed strategies.
+• Assisted in the maintenance and development of data dashboards, enhancing the organization's ability to track and measure the impact of initiatives.
+• Benchmarked internal data against industry standards, providing valuable insights for the development of equitable and competitive talent recruitment strategies.
+
+📌 Fund Accountant at FrontStream Aug '18 - Sep '20
+• Streamlined financial reconciliation using SQL and VBA, automating manual processes and saving over 250 hours annually.
+• Managed and audited a portfolio of nonprofit donations, leveraging data-driven strategies for equitable fund distribution.
+• Collaborated with cross-functional teams to design real-time financial tracking dashboards, enhancing transparency for key stakeholders.
+• Utilized HRIS systems and data visualization tools like Tableau for maintaining and developing people analytics dashboards.
+• Merged data from various sources to provide new insights, supporting talent acquisition and HR teams in data-driven decision-making.
+• Benchmarked and interpreted people data to identify trends, driving competitive strategies to attract and retain top talent.
+
+EDUCATION
+---------
+Flatiron Data Science Bootcamp
+Certificate | General Studies
+• Advanced expertise in Python, SQL, data visualization, machine learning, and feature engineering.
+• Built and optimized machine learning models for classification, regression, and time series forecasting (ARIMA,
+XGBoost, LightGBM, Random Forests, Gradient Boosting, Decision Trees) to extract insights from complex
+datasets.
+University of Maryland (UMBC) – Baltimore County
+Bachelor of Arts | Economics
+HackerRank Intermediate SQL Certification

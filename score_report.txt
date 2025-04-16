@@ -1,0 +1,18 @@
+SCORE REPORT
+============
+
+{'after': {'match_percent': 97.4,
+           'score_by_category': {'certification_license': 200.0,
+                                 'domain_knowledge': 189.4,
+                                 'final_score': 87.7,
+                                 'other': 0.0,
+                                 'soft_skill': 100.0,
+                                 'tool_platform': 300.0}},
+ 'before': {'match_percent': 63.2,
+            'score_by_category': {'certification_license': 100.0,
+                                  'domain_knowledge': 136.8,
+                                  'final_score': 55.7,
+                                  'other': 0.0,
+                                  'soft_skill': 50.0,
+                                  'tool_platform': 214.2}},
+ 'missing_keywords_after': ['statistic']}
