@@ -1,0 +1,47 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ name }} - Resume</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+            line-height: 1.6;
+            margin: 1in;
+            color: #333;
+        }
+        h1, h2, h3 {
+            margin-top: 15px;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+        h1 {
+            font-size: 20px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+        }
+        h2 {
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .bullet-list {
+            margin-left: 18px;
+            list-style-type: square;
+        }
+        .experience-entry {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px dotted #ddd;
+        }
+    </style>
+</head>
+<body>
+    {{ content | safe }}
+</body>
+</html>

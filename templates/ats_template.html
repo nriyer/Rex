@@ -1,0 +1,42 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ name }} - Resume</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.5;
+            margin: 1in;
+        }
+        h1, h2, h3 {
+            margin-top: 12px;
+            margin-bottom: 6px;
+        }
+        h1 {
+            font-size: 18px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+        }
+        h2 {
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+        .section {
+            margin-bottom: 15px;
+        }
+        .bullet-list {
+            margin-left: 15px;
+            list-style-type: disc;
+        }
+        .experience-entry {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    {{ content | safe }}
+</body>
+</html>

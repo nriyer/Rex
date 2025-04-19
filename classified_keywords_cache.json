@@ -75,5 +75,22 @@
   "numpy": "tool_platform",
   "quality": "soft_skill",
   "science": "domain_knowledge",
-  "testing": "domain_knowledge"
+  "testing": "domain_knowledge",
+  "apis": "tool_platform",
+  "automation": "tool_platform",
+  "banking": "domain_knowledge",
+  "computer": "tool_platform",
+  "database": "tool_platform",
+  "demographic": "domain_knowledge",
+  "email": "tool_platform",
+  "knowledge": "domain_knowledge",
+  "language": "domain_knowledge",
+  "operational": "domain_knowledge",
+  "performance": "soft_skill",
+  "pipeline": "tool_platform",
+  "privacy": "soft_skill",
+  "product": "tool_platform",
+  "regulation": "domain_knowledge",
+  "security": "domain_knowledge",
+  "service": "domain_knowledge"
 }
