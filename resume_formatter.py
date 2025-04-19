@@ -10,17 +10,49 @@ def format_experience_section(jobs: List[dict]) -> str:
     """
     lines = []
 
-    for job in jobs:
-        header = f"📌 {job['title']} at {job['company']} {job['date_range']}"
-        lines.append(header)
+    for i, job in enumerate(jobs):
+        # Extract job components
+        title = job.get('title', '').strip()
+        company = job.get('company', '').strip()
+        date_range = job.get('date_range', '').strip()
+        
+        # Format job title and date (first line)
+        # Use diamond bullet and ensure proper spacing
+        if date_range:
+            job_header = f"◆ {title} {date_range}"
+        else:
+            job_header = f"◆ {title}"
+        
+        lines.append(job_header)
+        
+        # Add company as separate line when available
+        if company:
+            lines.append(company)
+        
+        # Format bullet points with appropriate spacing
+        bullet_lines = []
+        for bullet in job.get("bullets", []):
+            # Clean up bullet formatting to ensure consistent bullets
+            # Remove any existing bullets (•-*◆) at the start
+            clean_bullet = bullet.lstrip('•-*□■◆♦📌 \t').strip()
+            
+            # Skip empty bullets
+            if not clean_bullet:
+                continue
+                
+            # Add bullet with proper formatting
+            bullet_lines.append(f"• {clean_bullet}")
+        
+        # Add bullets to main lines
+        if bullet_lines:
+            lines.extend(bullet_lines)
+        
+        # Add blank line between job entries if not the last job
+        if i < len(jobs) - 1:
+            lines.append("")
 
-        for bullet in job["bullets"]:
-            lines.append(f"• {bullet.lstrip('•- ').strip()}")
-
-
-        lines.append("")  # Blank line between jobs
-
-    return "\n".join(lines).strip()
+    result = "\n".join(lines).strip()
+    return result
 
 
 def assemble_resume(summary: str, skills: str, experience: str, education: str = "") -> str:

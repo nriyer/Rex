@@ -18,6 +18,7 @@ import pdfkit
 from docx import Document
 from docx.shared import Pt, Inches
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+import re
 
 # Disable WeasyPrint - We'll use only wkhtmltopdf
 WEASYPRINT_AVAILABLE = False
@@ -43,6 +44,25 @@ WKHTMLTOPDF_PATH = "C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe"  # Pat
 
 # Flag to disable problematic imports for simpler deployment
 ENABLE_PDF_GENERATION = True  # PDF generation is now enabled
+
+# Force update of templates on startup
+def force_update_templates():
+    """Force update the template files with the current template definitions."""
+    print("Forcing update of template files...")
+    for style, filename in template_files.items():
+        file_path = template_dir / filename
+        template_content = None
+        if style == STYLE_ATS:
+            template_content = ATS_TEMPLATE
+        elif style == STYLE_MODERN:
+            template_content = MODERN_TEMPLATE
+        elif style == STYLE_PROFESSIONAL:
+            template_content = PROFESSIONAL_TEMPLATE
+        
+        if template_content:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(template_content)
+            print(f"Updated template: {filename}")
 
 # Check if wkhtmltopdf is installed and accessible
 def is_wkhtmltopdf_installed():
@@ -349,21 +369,8 @@ template_files = {
     STYLE_PROFESSIONAL: "professional_template.html"
 }
 
-# Write templates to files if they don't exist
-for style, filename in template_files.items():
-    file_path = template_dir / filename
-    if not file_path.exists():
-        template_content = None
-        if style == STYLE_ATS:
-            template_content = ATS_TEMPLATE
-        elif style == STYLE_MODERN:
-            template_content = MODERN_TEMPLATE
-        elif style == STYLE_PROFESSIONAL:
-            template_content = PROFESSIONAL_TEMPLATE
-        
-        if template_content:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(template_content)
+# Update template files (ensure they have the latest content)
+force_update_templates()
 
 # ---------------------------------
 # Formatting Helper Functions
@@ -390,11 +397,18 @@ def format_text_to_html(resume_text):
     in_experience_entry = False
     
     # Initialize job position tracking
-    is_job_title_line = False
     previous_line_was_job_title = False
+    company_found = False
+    
+    # Common job title words for detection
+    job_title_keywords = [
+        'Analyst', 'Engineer', 'Manager', 'Director', 'Specialist', 'Associate', 
+        'Consultant', 'Developer', 'Accountant', 'Coordinator', 'Assistant',
+        'Supervisor', 'Representative', 'Administrator', 'Designer', 'Programmer',
+        'Budget'
+    ]
     
     for i, line in enumerate(lines):
-        orig_line = line  # Keep the original line for comparison
         line = line.strip()
         
         # Skip empty lines
@@ -416,10 +430,84 @@ def format_text_to_html(resume_text):
                 html_output.append('</div>')  # Close previous section
             current_section = clean_line
             previous_line_was_job_title = False
+            company_found = False
             continue
         
-        # Handle bullet points (lines starting with •, -, *, or numbers)
+        # Special processing for experience section
+        if current_section and current_section.upper() in ["EXPERIENCE", "WORK EXPERIENCE", "EMPLOYMENT", "PROFESSIONAL EXPERIENCE"]:
+            
+            # Check for position with special bullets (□, ■, ◆, 📌)
+            special_bullet_match = re.match(r'^([□■◆📌]\s*)(.*?)$', line)
+            if special_bullet_match:
+                # This is a job title line with a special bullet
+                if in_bullet_list:
+                    html_output.append('</ul>')
+                    in_bullet_list = False
+                
+                if in_experience_entry:
+                    html_output.append('</div>')  # Close previous experience entry
+                
+                bullet, position_text = special_bullet_match.groups()
+                html_output.append('<div class="experience-entry">')
+                html_output.append(f'<h3>{position_text}</h3>')
+                in_experience_entry = True
+                previous_line_was_job_title = True
+                company_found = False
+                continue
+            
+            # Check for date pattern directly indicating a job title line
+            date_pattern_match = re.search(r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\'\d{2}\s*[-–—]\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\'\d{2}|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\'\d{2}\s*[-–—]\s*Present', line, re.IGNORECASE)
+            
+            # Check for a job title format (Position at Company)
+            at_company_pattern = re.search(r'(.*?)\s+at\s+(.*?)$', line, re.IGNORECASE)
+            
+            # If a line contains a job title keyword followed by date pattern, it's likely a job title
+            job_title_with_date = False
+            if any(keyword in line for keyword in job_title_keywords) and re.search(r'\b(19|20)\d{2}\s*[-–—]\s*(19|20)\d{2}|\b(19|20)\d{2}\s*[-–—]', line):
+                job_title_with_date = True
+            
+            if date_pattern_match or at_company_pattern or job_title_with_date:
+                # Handle as job title
+                if in_bullet_list:
+                    html_output.append('</ul>')
+                    in_bullet_list = False
+                
+                if in_experience_entry:
+                    html_output.append('</div>')  # Close previous experience entry
+                
+                html_output.append('<div class="experience-entry">')
+                html_output.append(f'<h3>{line}</h3>')
+                in_experience_entry = True
+                previous_line_was_job_title = True
+                company_found = False
+                continue
+            
+            # Handle company name after job title
+            if previous_line_was_job_title and not company_found:
+                # If the next line doesn't look like a bullet point and is relatively short, it's likely a company name
+                if (not line.startswith(('•', '-', '*')) and 
+                    not re.match(r'^\d+\.', line) and 
+                    len(line) < 100):
+                    
+                    # Handle company with "at" format (e.g., "at Company Name")
+                    if line.lower().startswith('at '):
+                        company_name = line[3:].strip()  # Remove 'at ' prefix
+                    else:
+                        company_name = line
+                    
+                    html_output.append(f'<p class="company-name"><strong>{company_name}</strong></p>')
+                    previous_line_was_job_title = False
+                    company_found = True
+                    continue
+        
+        # Handle regular bullet points (lines starting with •, -, *, or numbers)
         if line.startswith('•') or line.startswith('-') or line.startswith('*') or (line.strip().startswith(('1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.'))):
+            # If the previous line was a job title and no company was found, this isn't a real bullet point yet
+            if previous_line_was_job_title and not company_found:
+                # We'll assume no company name was provided, so continue to bullet points
+                company_found = True
+                previous_line_was_job_title = False
+                
             if not in_bullet_list:
                 html_output.append('<ul class="bullet-list">')
                 in_bullet_list = True
@@ -427,60 +515,7 @@ def format_text_to_html(resume_text):
             # Clean the bullet character and add the item
             bullet_text = line.lstrip('•-*123456789. \t')
             html_output.append(f'<li>{bullet_text}</li>')
-            previous_line_was_job_title = False
             continue
-        
-        # **** SPECIALIZED JOB TITLE DETECTION FOR THIS SPECIFIC RESUME FORMAT ****
-        # First check if we're in the experience section
-        if current_section and current_section.upper() in ["EXPERIENCE", "WORK EXPERIENCE", "EMPLOYMENT"]:
-            
-            # Check specific patterns from the resume
-            # 1. Look for job title with a square bullet "□"
-            if line.startswith('□'):
-                is_job_title_line = True
-            
-            # 2. Look for "Budget Analyst" or other specific job titles 
-            elif any(title in line for title in ["Budget Analyst", "Accounting Analyst", "Fund Accountant"]):
-                is_job_title_line = True
-                
-            # 3. Job title lines in this resume have "at" after the title
-            elif " at " in line:
-                is_job_title_line = True
-                
-            # 4. Detect date ranges like "December 2023 - March 2025"
-            elif any(month in line for month in ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]) and " - " in line and any(year in line for year in ["2020", "2021", "2022", "2023", "2024", "2025"]):
-                is_job_title_line = True
-                
-            # If we determined this is a job title
-            if is_job_title_line:
-                # Close bullet list if we were in one
-                if in_bullet_list:
-                    html_output.append('</ul>')
-                    in_bullet_list = False
-                
-                # Start a new experience entry
-                if in_experience_entry:
-                    html_output.append('</div>')  # Close previous experience entry
-                
-                # Start a new experience entry with job title
-                html_output.append('<div class="experience-entry">')
-                html_output.append(f'<h3>{line}</h3>')
-                in_experience_entry = True
-                previous_line_was_job_title = True
-                is_job_title_line = False  # Reset for next iteration
-                continue
-            
-            # Handle company name directly after job title
-            elif previous_line_was_job_title:
-                # In this resume, company names often appear right after job titles
-                # And don't have date patterns or bullet points
-                if (not any(month in line for month in ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]) and 
-                    not line.startswith(('•', '-', '*', '□')) and 
-                    len(line) < 100):
-                    
-                    html_output.append(f'<p class="company-name"><strong>{line}</strong></p>')
-                    previous_line_was_job_title = False
-                    continue
         
         # Regular paragraph text
         if in_bullet_list:
@@ -531,6 +566,16 @@ def generate_pdf(resume_text, style=STYLE_ATS, name="Resume", email=None, phone=
             "3. If needed, set WKHTMLTOPDF_PATH to the executable path"
         )
     
+    # Print debugging info for contact info
+    print(f"PDF Generation - Contact Info:")
+    print(f"  Name: {name}")
+    print(f"  Email: {email}")
+    print(f"  Phone: {phone}")
+    print(f"  Location: {location}")
+    print(f"  LinkedIn: {linkedin}")
+    print(f"  GitHub: {github}")
+    print(f"  Website: {website}")
+    
     # Get the appropriate template based on style
     template_file = template_files.get(style, template_files[STYLE_ATS])
     template_path = template_dir / template_file
@@ -545,19 +590,24 @@ def generate_pdf(resume_text, style=STYLE_ATS, name="Resume", email=None, phone=
     # Create a Jinja2 template and render it
     template = jinja2.Template(template_text)
     rendered_html = template.render(
-        name=name,
+        name=name if name else "Resume",
         content=html_content,
-        email=email,
-        phone=phone,
-        location=location,
-        linkedin=linkedin,
-        github=github,
-        website=website
+        email=email if email else None,
+        phone=phone if phone else None,
+        location=location if location else None,
+        linkedin=linkedin if linkedin else None,
+        github=github if github else None,
+        website=website if website else None
     )
     
     # Save the rendered HTML to a temporary file
     temp_html = template_dir / "temp_resume.html"
     with open(temp_html, 'w', encoding='utf-8') as f:
+        f.write(rendered_html)
+    
+    # Write debug HTML to a file for inspection
+    debug_html = template_dir / "debug_resume.html"
+    with open(debug_html, 'w', encoding='utf-8') as f:
         f.write(rendered_html)
     
     # Convert HTML to PDF
@@ -646,6 +696,16 @@ def generate_docx(resume_text, style=STYLE_ATS, name="Resume", email=None, phone
     Returns:
         bytes: The DOCX file as bytes
     """
+    # Print debugging info for contact info
+    print(f"DOCX Generation - Contact Info:")
+    print(f"  Name: {name}")
+    print(f"  Email: {email}")
+    print(f"  Phone: {phone}")
+    print(f"  Location: {location}")
+    print(f"  LinkedIn: {linkedin}")
+    print(f"  GitHub: {github}")
+    print(f"  Website: {website}")
+    
     # Create a new Document
     doc = Document()
     
@@ -672,6 +732,9 @@ def generate_docx(resume_text, style=STYLE_ATS, name="Resume", email=None, phone
         section.right_margin = Inches(0.5)
         section.bottom_margin = Inches(0.5)
         section.left_margin = Inches(0.5)
+    
+    # Ensure name has a value
+    name = name if name else "Resume"
     
     # Add the header with name and contact information
     # Name
@@ -729,6 +792,15 @@ def generate_docx(resume_text, style=STYLE_ATS, name="Resume", email=None, phone
     # Process each line
     in_bullet_list = False
     current_section = None
+    previous_line_was_job_title = False
+    company_found = False
+    
+    job_title_keywords = [
+        'Analyst', 'Engineer', 'Manager', 'Director', 'Specialist', 'Associate', 
+        'Consultant', 'Developer', 'Accountant', 'Coordinator', 'Assistant',
+        'Supervisor', 'Representative', 'Administrator', 'Designer', 'Programmer',
+        'Budget'
+    ]
     
     for line in lines:
         line = line.strip()
@@ -751,10 +823,93 @@ def generate_docx(resume_text, style=STYLE_ATS, name="Resume", email=None, phone
                 
             current_section = clean_line
             in_bullet_list = False
+            previous_line_was_job_title = False
+            company_found = False
             continue
+        
+        # Special processing for experience section
+        if current_section and current_section.upper() in ["EXPERIENCE", "WORK EXPERIENCE", "EMPLOYMENT", "PROFESSIONAL EXPERIENCE"]:
+            
+            # Check for position with special bullets (□, ■, ◆, 📌)
+            special_bullet_match = re.match(r'^([□■◆📌]\s*)(.*?)$', line)
+            if special_bullet_match:
+                # This is a job title line with a special bullet
+                bullet, position_text = special_bullet_match.groups()
+                heading = doc.add_heading(position_text, level=2)
+                
+                # Customize heading based on style
+                for run in heading.runs:
+                    run.font.name = font_name
+                    run.font.size = Pt(12)
+                    if style == STYLE_PROFESSIONAL:
+                        heading.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                
+                previous_line_was_job_title = True
+                company_found = False
+                in_bullet_list = False
+                continue
+            
+            # Check for date pattern directly indicating a job title line
+            date_pattern_match = re.search(r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\'\d{2}\s*[-–—]\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\'\d{2}|\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\'\d{2}\s*[-–—]\s*Present', line, re.IGNORECASE)
+            
+            # Check for a job title format (Position at Company)
+            at_company_pattern = re.search(r'(.*?)\s+at\s+(.*?)$', line, re.IGNORECASE)
+            
+            # If a line contains a job title keyword followed by date pattern, it's likely a job title
+            job_title_with_date = False
+            if any(keyword in line for keyword in job_title_keywords) and re.search(r'\b(19|20)\d{2}\s*[-–—]\s*(19|20)\d{2}|\b(19|20)\d{2}\s*[-–—]', line):
+                job_title_with_date = True
+            
+            if date_pattern_match or at_company_pattern or job_title_with_date:
+                # Add a job title heading
+                heading = doc.add_heading(line, level=2)
+                
+                # Customize heading based on style
+                for run in heading.runs:
+                    run.font.name = font_name
+                    run.font.size = Pt(12)
+                    if style == STYLE_PROFESSIONAL:
+                        heading.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                
+                previous_line_was_job_title = True
+                company_found = False
+                in_bullet_list = False
+                continue
+            
+            # Handle company name after job title
+            if previous_line_was_job_title and not company_found:
+                if (not line.startswith(('•', '-', '*')) and 
+                    not re.match(r'^\d+\.', line) and 
+                    len(line) < 100):
+                    
+                    # Handle company with "at" format (e.g., "at Company Name")
+                    if line.lower().startswith('at '):
+                        company_name = line[3:].strip()  # Remove 'at ' prefix
+                    else:
+                        company_name = line
+                    
+                    # Add the company name as italicized paragraph
+                    p = doc.add_paragraph()
+                    p.add_run(company_name).italic = True
+                    
+                    for run in p.runs:
+                        run.font.name = font_name
+                        run.font.size = Pt(11)
+                        if style == STYLE_PROFESSIONAL:
+                            p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                    
+                    previous_line_was_job_title = False
+                    company_found = True
+                    continue
         
         # Handle bullet points
         if line.startswith('•') or line.startswith('-') or line.startswith('*') or (line.strip().startswith(('1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.'))):
+            # If the previous line was a job title and no company was found, this isn't a real bullet point yet
+            if previous_line_was_job_title and not company_found:
+                # We'll assume no company name was provided, so continue to bullet points
+                company_found = True
+                previous_line_was_job_title = False
+            
             # Add a bullet point
             bullet_text = line.lstrip('•-*123456789. \t')
             p = doc.add_paragraph(bullet_text)
@@ -766,21 +921,6 @@ def generate_docx(resume_text, style=STYLE_ATS, name="Resume", email=None, phone
                 run.font.size = Pt(11)
             
             in_bullet_list = True
-            continue
-            
-        # Handle experience entries
-        if '📌' in line or 'at ' in line.lower() and any(month in line for month in ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']):
-            # Add a job title heading
-            heading = doc.add_heading(line, level=2)
-            
-            # Customize heading based on style
-            for run in heading.runs:
-                run.font.name = font_name
-                run.font.size = Pt(12)
-                if style == STYLE_PROFESSIONAL:
-                    heading.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
-            
-            in_bullet_list = False
             continue
         
         # Regular paragraph text

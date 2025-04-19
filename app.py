@@ -5,6 +5,82 @@ from pathlib import Path
 import tempfile
 import os
 from resume_export import generate_pdf, generate_docx, get_available_styles
+import re
+
+def extract_contact_info(resume_text):
+    """Extract basic contact information from resume text."""
+    contact_info = {
+        'name': '',
+        'email': '',
+        'phone': '',
+        'location': '',
+        'linkedin': '',
+        'github': '',
+        'website': ''
+    }
+    
+    # Get the first few lines where contact info typically appears
+    lines = resume_text.split('\n')[:15]  # Look in first 15 lines
+    
+    # Look for patterns
+    email_pattern = r'[\w\.-]+@[\w\.-]+\.\w+'
+    phone_pattern = r'(\d{3}[-\.\s]??\d{3}[-\.\s]??\d{4}|\(\d{3}\)\s*\d{3}[-\.\s]??\d{4}|\d{3}[-\.\s]??\d{4})'
+    
+    # Check for name (usually the first substantial line)
+    for line in lines:
+        line = line.strip()
+        if line and len(line) > 2 and not '@' in line and not line.startswith(('http', 'www')):
+            # Skip lines that are likely not names
+            if any(term in line.lower() for term in ['resume', 'cv', 'curriculum', 'vitae', 'summary']):
+                continue
+            contact_info['name'] = line
+            break
+    
+    # Check for email
+    for line in lines:
+        email_match = re.search(email_pattern, line)
+        if email_match:
+            contact_info['email'] = email_match.group(0)
+            break
+    
+    # Check for phone
+    for line in lines:
+        phone_match = re.search(phone_pattern, line)
+        if phone_match:
+            contact_info['phone'] = phone_match.group(0)
+            break
+    
+    # Check for location (common formats)
+    location_keywords = ['city', 'state', 'country', 'location', 'address']
+    for line in lines:
+        line_lower = line.lower()
+        # Skip lines with emails or phones
+        if '@' in line or re.search(phone_pattern, line):
+            continue
+        # Look for location indicators
+        if any(keyword in line_lower for keyword in location_keywords) or ',' in line:
+            if not contact_info['location']:  # Only set if not already found
+                # Clean up the line
+                location = re.sub(r'(address|location|city|state|country)[\s:]+', '', line, flags=re.IGNORECASE)
+                contact_info['location'] = location.strip()
+    
+    # Look for GitHub, LinkedIn or website
+    for line in lines:
+        line_lower = line.lower()
+        if 'github' in line_lower:
+            github_match = re.search(r'github\.com/[\w-]+', line_lower)
+            if github_match:
+                contact_info['github'] = github_match.group(0)
+        if 'linkedin' in line_lower:
+            linkedin_match = re.search(r'linkedin\.com/in/[\w-]+', line_lower)
+            if linkedin_match:
+                contact_info['linkedin'] = linkedin_match.group(0)
+        if any(domain in line_lower for domain in ['.com', '.org', '.net', '.io']) and 'http' in line_lower:
+            website_match = re.search(r'https?://[\w.-]+\.\w+[\w/.-]*', line_lower)
+            if website_match and not contact_info['website']:
+                contact_info['website'] = website_match.group(0)
+    
+    return contact_info
 
 # Set page config
 st.set_page_config(
@@ -67,6 +143,15 @@ with col1:
                     response = requests.post('http://localhost:8000/extract-text', files=files)
                     if response.status_code == 200:
                         st.session_state.resume_text = response.json()['text']
+                        
+                        # Extract contact info from the resume text
+                        detected_contact_info = extract_contact_info(st.session_state.resume_text)
+                        
+                        # Update session state with detected info (only if empty)
+                        for key, value in detected_contact_info.items():
+                            if value and not st.session_state.contact_info.get(key):
+                                st.session_state.contact_info[key] = value
+                        
                         st.success("Resume uploaded successfully!")
                     else:
                         st.error("Failed to process the PDF file.")
@@ -93,22 +178,6 @@ with col2:
 
 # Add a divider
 st.divider()
-
-# Add this after the col1 and col2 creation
-with st.expander("Contact Information (for Resume Header)"):
-    contact_col1, contact_col2 = st.columns(2)
-    
-    with contact_col1:
-        st.session_state.contact_info['name'] = st.text_input("Full Name", value=st.session_state.contact_info.get('name', ''))
-        st.session_state.contact_info['email'] = st.text_input("Email", value=st.session_state.contact_info.get('email', ''))
-        st.session_state.contact_info['phone'] = st.text_input("Phone", value=st.session_state.contact_info.get('phone', ''))
-        st.session_state.contact_info['location'] = st.text_input("Location", value=st.session_state.contact_info.get('location', ''), 
-                                                help="City, State or Country")
-    
-    with contact_col2:
-        st.session_state.contact_info['linkedin'] = st.text_input("LinkedIn URL", value=st.session_state.contact_info.get('linkedin', ''))
-        st.session_state.contact_info['github'] = st.text_input("GitHub URL", value=st.session_state.contact_info.get('github', ''))
-        st.session_state.contact_info['website'] = st.text_input("Personal Website", value=st.session_state.contact_info.get('website', ''))
 
 # Process button
 if st.button("Optimize Resume", type="primary"):
@@ -179,9 +248,41 @@ if st.button("Optimize Resume", type="primary"):
             except Exception as e:
                 st.error(f"An error occurred: {str(e)}")
 
-# Add resume export options only if we have an enhanced resume
+# Add this after displaying the enhanced resume
+# After we have an enhanced resume and before we show export options
 if st.session_state.enhanced_resume:
     st.subheader("Export Options")
+    
+    # Let's ensure contact info is collected and used
+    with st.expander("Contact Information for Resume Header", expanded=True):
+        st.info("This information will appear in your resume header. At minimum, provide your name.")
+        contact_col1, contact_col2 = st.columns(2)
+        
+        with contact_col1:
+            st.session_state.contact_info['name'] = st.text_input("Full Name", 
+                value=st.session_state.contact_info.get('name', ''),
+                key="contact_name")
+            st.session_state.contact_info['email'] = st.text_input("Email", 
+                value=st.session_state.contact_info.get('email', ''),
+                key="contact_email")
+            st.session_state.contact_info['phone'] = st.text_input("Phone", 
+                value=st.session_state.contact_info.get('phone', ''),
+                key="contact_phone")
+            st.session_state.contact_info['location'] = st.text_input("Location", 
+                value=st.session_state.contact_info.get('location', ''), 
+                help="City, State or Country",
+                key="contact_location")
+        
+        with contact_col2:
+            st.session_state.contact_info['linkedin'] = st.text_input("LinkedIn URL", 
+                value=st.session_state.contact_info.get('linkedin', ''),
+                key="contact_linkedin")
+            st.session_state.contact_info['github'] = st.text_input("GitHub URL", 
+                value=st.session_state.contact_info.get('github', ''),
+                key="contact_github")
+            st.session_state.contact_info['website'] = st.text_input("Personal Website", 
+                value=st.session_state.contact_info.get('website', ''),
+                key="contact_website")
     
     # Create columns for formatting options
     format_col1, format_col2 = st.columns(2)

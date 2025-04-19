@@ -9,8 +9,28 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-size: 12px;
             line-height: 1.6;
-            margin: 1in;
+            margin: 0.75in;
             color: #333;
+        }
+        .header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .header h1 {
+            font-size: 22px;
+            margin: 0 0 5px 0;
+            color: #2c3e50;
+            border-bottom: none;
+        }
+        .contact-info {
+            font-size: 11px;
+            margin: 5px 0;
+            color: #555;
+        }
+        .contact-item {
+            display: inline-block;
+            margin-right: 10px;
         }
         h1, h2, h3 {
             margin-top: 15px;
@@ -27,6 +47,12 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
+        .company-name {
+            margin-top: -4px;
+            margin-bottom: 8px;
+            color: #555;
+            font-style: italic;
+        }
         .section {
             margin-bottom: 20px;
         }
@@ -42,6 +68,19 @@
     </style>
 </head>
 <body>
+    <div class="header">
+        <h1>{{ name }}</h1>
+        <div class="contact-info">
+            {% if email %}<span class="contact-item">{{ email }}</span>{% endif %}
+            {% if phone %}<span class="contact-item">{{ phone }}</span>{% endif %}
+            {% if location %}<span class="contact-item">{{ location }}</span>{% endif %}
+        </div>
+        <div class="contact-info">
+            {% if linkedin %}<span class="contact-item">{{ linkedin }}</span>{% endif %}
+            {% if github %}<span class="contact-item">{{ github }}</span>{% endif %}
+            {% if website %}<span class="contact-item">{{ website }}</span>{% endif %}
+        </div>
+    </div>
     {{ content | safe }}
 </body>
 </html>

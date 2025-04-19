@@ -9,7 +9,25 @@
             font-family: Arial, sans-serif;
             font-size: 12px;
             line-height: 1.5;
-            margin: 1in;
+            margin: 0.75in;
+        }
+        .header {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 8px;
+        }
+        .header h1 {
+            font-size: 18px;
+            margin: 0 0 5px 0;
+            border-bottom: none;
+        }
+        .contact-info {
+            font-size: 11px;
+            margin: 5px 0;
+        }
+        .contact-item {
+            display: inline-block;
+            margin-right: 12px;
         }
         h1, h2, h3 {
             margin-top: 12px;
@@ -24,6 +42,11 @@
             font-size: 16px;
             text-transform: uppercase;
         }
+        .company-name {
+            margin-top: -5px;
+            margin-bottom: 8px;
+            font-style: normal;
+        }
         .section {
             margin-bottom: 15px;
         }
@@ -37,6 +60,19 @@
     </style>
 </head>
 <body>
+    <div class="header">
+        <h1>{{ name }}</h1>
+        <div class="contact-info">
+            {% if email %}<span class="contact-item">{{ email }}</span>{% endif %}
+            {% if phone %}<span class="contact-item">{{ phone }}</span>{% endif %}
+            {% if location %}<span class="contact-item">{{ location }}</span>{% endif %}
+        </div>
+        <div class="contact-info">
+            {% if linkedin %}<span class="contact-item">{{ linkedin }}</span>{% endif %}
+            {% if github %}<span class="contact-item">{{ github }}</span>{% endif %}
+            {% if website %}<span class="contact-item">{{ website }}</span>{% endif %}
+        </div>
+    </div>
     {{ content | safe }}
 </body>
 </html>
