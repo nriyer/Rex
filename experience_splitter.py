@@ -31,7 +31,6 @@ def split_experience_section(text):
     """
     lines = text.strip().split("\n")
     job_chunks = []
-    current_chunk = []
     job_start_indices = []
 
     # First pass: identify all potential job start lines
@@ -42,24 +41,21 @@ def split_experience_section(text):
 
         # Various methods to detect job title lines
         is_job_title = False
-        
+
         # Method 1: Look for lines starting with special bullets (□■◆♦📌)
         if re.match(r"^[□■◆♦📌]", line):
             is_job_title = True
-            
-        # Method 2: Look for job titles with dates (Budget Analyst Mar '21 - Dec '23)
-        elif re.search(r"(Analyst|Engineer|Manager|Director|Accountant)", line) and DATE_RANGE_PATTERN.search(line):
-            is_job_title = True
-            
-        # Method 3: Look for job titles that are short standalone lines
-        elif any(title in line for title in ["Analyst", "Engineer", "Manager", "Accountant"]) and len(line) < 70:
-            # Make sure it's not a bullet point
-            if not line.startswith(('•', '-', '*')):
-                is_job_title = True
 
-        # Method 4: Look for Fund Accountant style job entries
-        elif "Fund Accountant" in line or "Accounting Analyst" in line:
+        # Method 2: Look for job titles with dates (Budget Analyst Mar '21 - Dec '23)
+        elif re.search(JOB_TITLE_PATTERN, line) and DATE_RANGE_PATTERN.search(line):
             is_job_title = True
+
+        # New Method: Use JOB_TITLE_PATTERN directly for title-only lines
+        elif re.search(JOB_TITLE_PATTERN, line) and not line.startswith(('•', '-', '*')):
+            # Look ahead and behind for job titles and dates
+            if (i > 0 and (re.search(JOB_TITLE_PATTERN, lines[i-1]) or DATE_RANGE_PATTERN.search(lines[i-1]))) or \
+               (i < len(lines) - 1 and (re.search(JOB_TITLE_PATTERN, lines[i+1]) or DATE_RANGE_PATTERN.search(lines[i+1]))):
+                is_job_title = True
 
         if is_job_title:
             job_start_indices.append(i)
@@ -76,12 +72,12 @@ def split_experience_section(text):
             end_idx = len(lines)
         else:
             end_idx = job_start_indices[i + 1]
-        
+
         # Get all lines for this job
         job_lines = lines[start_idx:end_idx]
         # Create a string from these lines
         job_chunk = "\n".join(job_lines).strip()
-        
+
         # Add the job chunk if it's not empty
         if job_chunk:
             job_chunks.append(job_chunk)
