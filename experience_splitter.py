@@ -27,88 +27,95 @@ DATE_RANGE_PATTERN = re.compile(
 def split_experience_section(text):
     """
     Splits the experience section into job chunks in a stable, format-flexible way.
-    It groups lines into chunks where each chunk starts with a non-bullet (header line),
-    and all following bullet lines are grouped until the next header appears.
+    Uses the same job header detection logic as parse_job_entry() to identify job boundaries.
+    
+    A new job block begins when:
+    - A line contains a known job title (matches JOB_TITLE_PATTERN)
+    - A line contains a date range (matches DATE_RANGE_PATTERN)
+    - A line is in title case or ALL CAPS and not a bullet point
+    - A special header bullet (□■◆♦📌) is used
+    
+    Returns:
+        list: A list of job entry text chunks
     """
     lines = text.strip().split("\n")
     job_chunks = []
     current_chunk = []
-
-    def is_bullet(line):
-        return line.strip().startswith(('•', '-', '*', '·', '–'))
-
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
+    
+    # Define valid bullet point characters for detection
+    valid_bullet_chars = r'[•\-\*◦◈◇➢➣➤►→⁃]'
+    
+    # Patterns to identify job headers - reusing patterns from parse_job_entry()
+    new_job_pattern = re.compile(
+        r'^[□■◆♦📌]|'                                              # Heading bullets
+        r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}|'  # Date patterns
+        r'\b\d{4}\s*[-–—]\s*(?:Present|\d{4})\b',                # Year ranges
+        re.IGNORECASE
+    )
+    
+    # Match common job titles
+    job_title_pattern = re.compile(
+        r'\b(?:Analyst|Engineer|Developer|Manager|Director|Specialist|Associate|Consultant|Coordinator|Assistant|Accountant|Administrator|Lead|Senior)\b', 
+        re.IGNORECASE
+    )
+    
+    # Match "at Company" pattern
+    at_company_pattern = re.compile(r'\bat\s+([A-Z][A-Za-z0-9\s&,\.-]+)')
+    
+    def is_job_header(line):
+        """Determine if a line is likely to be a job header"""
+        # Skip empty lines
+        if not line.strip():
+            return False
+            
+        # Skip if it's a bullet point
+        if re.match(f'^{valid_bullet_chars}', line):
+            return False
+            
+        # Check for patterns that strongly indicate a job header
+        if (new_job_pattern.search(line) or 
+            (line.istitle() and len(line) < 80) or 
+            (line.isupper() and len(line) < 30) or
+            (job_title_pattern.search(line) and len(line) < 80) or
+            at_company_pattern.search(line) or
+            DATE_RANGE_PATTERN.search(line)):
+            return True
+            
+        return False
+    
+    # Process all lines
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if not line:
             continue
-
-        if not is_bullet(stripped):
-            # If current_chunk already has content, this marks the start of a new job
+        
+        # Check if this is a new job header
+        if is_job_header(line):
+            # If we already have content in the current chunk, save it
             if current_chunk:
                 job_chunks.append("\n".join(current_chunk).strip())
                 current_chunk = []
-        current_chunk.append(stripped)
-
+                
+            # Start a new chunk with this header
+            current_chunk.append(line)
+        else:
+            # Continue adding to the current chunk
+            if current_chunk or not is_job_header(line):
+                current_chunk.append(line)
+            else:
+                # Edge case: if this is the first non-header line and we don't have a chunk yet,
+                # create a new chunk starting with this line
+                current_chunk = [line]
+    
+    # Don't forget the last chunk
     if current_chunk:
         job_chunks.append("\n".join(current_chunk).strip())
-
+        
+    # Edge case handling - if we ended up with no chunks, return the whole text as one chunk
+    if not job_chunks and text.strip():
+        return [text.strip()]
+        
     return job_chunks
-
-
-
-    # # First pass: identify all potential job start lines
-    # for i, line in enumerate(lines):
-    #     line = line.strip()
-    #     if not line:
-    #         continue
-
-    #     # Various methods to detect job title lines
-    #     is_job_title = False
-        
-    #     # Method 1: Look for lines starting with special bullets (□■◆♦📌)
-    #     if re.match(r"^[□■◆♦📌]", line):
-    #         is_job_title = True
-            
-    #     # Method 2: Look for job titles with dates (Budget Analyst Mar '21 - Dec '23)
-    #     elif re.search(r"(Analyst|Engineer|Manager|Director|Accountant)", line) and DATE_RANGE_PATTERN.search(line):
-    #         is_job_title = True
-            
-    #     # Method 3: Look for job titles that are short standalone lines
-    #     elif any(title in line for title in ["Analyst", "Engineer", "Manager", "Accountant"]) and len(line) < 70:
-    #         # Make sure it's not a bullet point
-    #         if not line.startswith(('•', '-', '*')):
-    #             is_job_title = True
-
-    #     # Method 4: Look for Fund Accountant style job entries
-    #     elif "Fund Accountant" in line or "Accounting Analyst" in line:
-    #         is_job_title = True
-
-    #     if is_job_title:
-    #         job_start_indices.append(i)
-
-    # # If no job starts found, return the entire text as one job
-    # if not job_start_indices:
-    #     return [text]
-
-    # # Second pass: Process each job chunk
-    # for i in range(len(job_start_indices)):
-    #     start_idx = job_start_indices[i]
-    #     # If this is the last job, include all remaining lines
-    #     if i == len(job_start_indices) - 1:
-    #         end_idx = len(lines)
-    #     else:
-    #         end_idx = job_start_indices[i + 1]
-        
-    #     # Get all lines for this job
-    #     job_lines = lines[start_idx:end_idx]
-    #     # Create a string from these lines
-    #     job_chunk = "\n".join(job_lines).strip()
-        
-    #     # Add the job chunk if it's not empty
-    #     if job_chunk:
-    #         job_chunks.append(job_chunk)
-
-    # return job_chunks
 
 # === Parse Individual Job Entry ===
 
