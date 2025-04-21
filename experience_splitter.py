@@ -246,7 +246,22 @@ def parse_job_entry(chunk):
     # PHASE 3: Extract and clean bullet points with proper limits
     bullets_start_idx = len(header_lines)
     bullets = []
-    current_bullet = None
+    
+    # Define valid bullet point characters
+    valid_bullet_chars = r'[•\-\*◦◈◇➢➣➤►→⁃]'
+    
+    # Define patterns that indicate a new job header
+    new_job_pattern = re.compile(
+        r'^[□■◆♦📌]|'                                                # Heading bullets
+        r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}|'  # Date patterns
+        r'\b\d{4}\s*[-–—]\s*(?:Present|\d{4})\b',                  # Year ranges
+        re.IGNORECASE
+    )
+    
+    job_title_pattern = re.compile(
+        r'\b(?:Analyst|Engineer|Developer|Manager|Director|Specialist|Associate|Consultant)\b', 
+        re.IGNORECASE
+    )
     
     for i in range(bullets_start_idx, len(lines)):
         line = lines[i].strip()
@@ -256,33 +271,26 @@ def parse_job_entry(chunk):
             continue
         
         # Check if this might be the start of a new job entry
-        if (re.match(r'^[□■◆♦📌]', line) or 
-            re.search(r'\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4}', line) or
+        if (new_job_pattern.search(line) or 
+            (line.istitle() and not re.match(valid_bullet_chars, line)) or
             (line.isupper() and len(line) < 30) or
-            (re.search(r'\b(?:Analyst|Engineer|Developer|Manager|Director)\b', line, re.IGNORECASE) and len(line) < 60)):
+            (job_title_pattern.search(line) and len(line) < 60)):
             break
         
-        # Detect bullet point starts
-        if re.match(r'^[•\-\*◦◈◇➢➣➤►→⁃]', line):
-            # Save previous bullet if exists
-            if current_bullet:
-                bullets.append(current_bullet)
+        # Only process lines that start with valid bullet characters
+        if re.match(f'^{valid_bullet_chars}', line):
+            # Remove the bullet character and add to list
+            clean_bullet = re.sub(f'^{valid_bullet_chars}\s*', '', line).strip()
+            
+            # Only add bullet points that are meaningful (not too short or incomplete)
+            if len(clean_bullet) > 10 and not clean_bullet.endswith(('by', 'for', 'to', 'of', 'the', 'and')):
+                bullets.append(clean_bullet)
                 
-            # Start new bullet, removing the bullet character
-            current_bullet = re.sub(r'^[•\-\*◦◈◇➢➣➤►→⁃]\s*', '', line)
-        elif current_bullet:
-            # Continue previous bullet (multi-line bullet)
-            current_bullet += " " + line
-        else:
-            # Start a new bullet even without a symbol (first line after headers)
-            current_bullet = line
+                # Cap bullets to maximum 6
+                if len(bullets) >= 6:
+                    break
     
-    # Add the last bullet
-    if current_bullet:
-        bullets.append(current_bullet)
-    
-    # Cap bullets to maximum 6
-    job_data["bullets"] = bullets[:6]
+    job_data["bullets"] = bullets
     
     # Final clean-up for title and company
     # Remove any trailing "at" from title
