@@ -10,7 +10,7 @@ def format_experience_section(jobs: List[dict]) -> str:
     """
     lines = []
 
-    for i, job in enumerate(jobs):
+    for job in jobs:
         # Extract job components
         title = job.get('title', '').strip()
         company = job.get('company', '').strip()
@@ -25,31 +25,21 @@ def format_experience_section(jobs: List[dict]) -> str:
         
         lines.append(job_header)
         
-        # Add company as separate line when available
+        # Add company on its own line if present (second line)
         if company:
             lines.append(company)
         
-        # Format bullet points with appropriate spacing
-        bullet_lines = []
+        # Add a blank line after the company/header for spacing
+        lines.append("")
+        
+        # Format bullet points
         for bullet in job.get("bullets", []):
             # Clean up bullet formatting to ensure consistent bullets
-            # Remove any existing bullets (•-*◆) at the start
             clean_bullet = bullet.lstrip('•-*□■◆♦📌 \t').strip()
-            
-            # Skip empty bullets
-            if not clean_bullet:
-                continue
-                
-            # Add bullet with proper formatting
-            bullet_lines.append(f"• {clean_bullet}")
+            lines.append(f"• {clean_bullet}")
         
-        # Add bullets to main lines
-        if bullet_lines:
-            lines.extend(bullet_lines)
-        
-        # Add blank line between job entries if not the last job
-        if i < len(jobs) - 1:
-            lines.append("")
+        # Add blank line between job entries
+        lines.append("")
 
     result = "\n".join(lines).strip()
     return result
