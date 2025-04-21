@@ -1,4 +1,6 @@
 import re
+print("🔥 experience_splitter.py LOADED")
+
 
 # === Constants ===
 
@@ -29,6 +31,8 @@ def split_experience_section(text):
     Split the experience section text into individual job chunks.
     Each job chunk starts with a job title line and continues until the next job title.
     """
+    STOP_KEYWORDS = ["summary", "projects", "Education", "skills", "education and certifications", "certifications"]
+
     lines = text.strip().split("\n")
     job_chunks = []
     current_chunk = []
@@ -39,6 +43,16 @@ def split_experience_section(text):
         line = line.strip()
         if not line:
             continue
+
+        # Skip bad header lines (contact, email, phone, address)
+        if re.search(r"@|http|\.com|\d{3}[-.\s]?\d{3}[-.\s]?\d{4}", line.lower()):
+            continue
+        
+        # Skip false header matches
+        if any(stop in line.lower() for stop in STOP_KEYWORDS):
+            print(f"🚫 Skipping stopword line: {line}")
+            continue  # ✅ just skip, NOT break
+
 
         # Various methods to detect job title lines
         is_job_title = False
@@ -64,6 +78,19 @@ def split_experience_section(text):
         if is_job_title:
             job_start_indices.append(i)
 
+        # Method 5: Handle formats where job title + date is one line, company is next
+        elif i + 1 < len(lines):
+            next_line = lines[i + 1].strip()
+            if (
+                re.search(r"(Analyst|Engineer|Manager|Accountant)", line) and
+                DATE_RANGE_PATTERN.search(line) and
+                not any(skip in next_line.lower() for skip in STOP_KEYWORDS) and
+                len(next_line) < 100 and
+                not next_line.startswith(("•", "-", "*"))
+            ):
+                is_job_title = True
+
+
     # If no job starts found, return the entire text as one job
     if not job_start_indices:
         return [text]
@@ -71,20 +98,24 @@ def split_experience_section(text):
     # Second pass: Process each job chunk
     for i in range(len(job_start_indices)):
         start_idx = job_start_indices[i]
-        # If this is the last job, include all remaining lines
-        if i == len(job_start_indices) - 1:
-            end_idx = len(lines)
-        else:
-            end_idx = job_start_indices[i + 1]
-        
-        # Get all lines for this job
+        end_idx = job_start_indices[i + 1] if i < len(job_start_indices) - 1 else len(lines)
+
+        # Slice out job lines
         job_lines = lines[start_idx:end_idx]
-        # Create a string from these lines
-        job_chunk = "\n".join(job_lines).strip()
-        
-        # Add the job chunk if it's not empty
+
+        # Truncate the job if a STOP keyword appears mid-chunk
+        truncated_lines = []
+        for line in job_lines:
+            if any(stop in line.lower() for stop in STOP_KEYWORDS):
+                print(f"🚫 Truncating job at STOP line: {line}")
+                break
+            truncated_lines.append(line)
+
+        job_chunk = "\n".join(truncated_lines).strip()
+
         if job_chunk:
             job_chunks.append(job_chunk)
+
 
     return job_chunks
 
