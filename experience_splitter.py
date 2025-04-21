@@ -35,6 +35,8 @@ def split_experience_section(text):
     - A line is in title case or ALL CAPS and not a bullet point
     - A special header bullet (□■◆♦📌) is used
     
+    Supports multi-line job headers (up to 3 lines) and proper bullet collection.
+    
     Returns:
         list: A list of job entry text chunks
     """
@@ -43,7 +45,7 @@ def split_experience_section(text):
     current_chunk = []
     
     # Define valid bullet point characters for detection
-    valid_bullet_chars = r'[•\-\*◦◈◇➢➣➤►→⁃]'
+    valid_bullet_chars = r'[•\-\*◦◈◇➢➣➤►→⁃▪]'
     
     # Patterns to identify job headers - reusing patterns from parse_job_entry()
     new_job_pattern = re.compile(
@@ -83,14 +85,57 @@ def split_experience_section(text):
             
         return False
     
+    def is_multi_line_header(lines_buffer):
+        """Check if a collection of lines (up to 3) forms a valid job header"""
+        if not lines_buffer:
+            return False
+            
+        # Join lines to check for patterns across multiple lines
+        combined_text = " ".join(lines_buffer)
+        
+        # Strong indicators that this is a multi-line header
+        has_date = DATE_PATTERN.search(combined_text) or DATE_RANGE_PATTERN.search(combined_text)
+        has_job_title = job_title_pattern.search(combined_text) or JOB_TITLE_PATTERN.search(combined_text)
+        has_company_indicator = at_company_pattern.search(combined_text) or "Inc" in combined_text or "LLC" in combined_text
+        
+        # Consider it a header if it has at least a date or job title
+        if has_date or has_job_title:
+            return True
+            
+        # Check if the first line is all caps (likely a company) and second has a job title or date
+        if len(lines_buffer) >= 2:
+            if (lines_buffer[0].isupper() and len(lines_buffer[0]) < 30) and (job_title_pattern.search(lines_buffer[1]) or DATE_PATTERN.search(lines_buffer[1])):
+                return True
+                
+        return False
+    
     # Process all lines
-    for i, line in enumerate(lines):
-        line = line.strip()
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
         if not line:
+            i += 1
             continue
         
-        # Check if this is a new job header
-        if is_job_header(line):
+        # Check for multi-line job headers (look ahead up to 3 lines)
+        header_buffer = []
+        for j in range(i, min(i + 3, len(lines))):
+            if not lines[j].strip() or re.match(f'^{valid_bullet_chars}', lines[j].strip()):
+                break
+            header_buffer.append(lines[j].strip())
+        
+        # Check if we have a multi-line job header
+        if is_multi_line_header(header_buffer):
+            # If we already have content in the current chunk, save it
+            if current_chunk:
+                job_chunks.append("\n".join(current_chunk).strip())
+                current_chunk = []
+            
+            # Add the header lines to the new chunk
+            current_chunk.extend(header_buffer)
+            i += len(header_buffer)
+        # Check if this is a single line job header
+        elif is_job_header(line):
             # If we already have content in the current chunk, save it
             if current_chunk:
                 job_chunks.append("\n".join(current_chunk).strip())
@@ -98,14 +143,27 @@ def split_experience_section(text):
                 
             # Start a new chunk with this header
             current_chunk.append(line)
+            i += 1
         else:
-            # Continue adding to the current chunk
-            if current_chunk or not is_job_header(line):
-                current_chunk.append(line)
+            # If this is a bullet point, add it to the current chunk
+            if re.match(f'^{valid_bullet_chars}', line):
+                # If we don't have a current chunk, start one with this bullet
+                # (though this is unusual and might indicate a parsing issue)
+                if not current_chunk:
+                    current_chunk = [line]
+                else:
+                    # Add to existing chunk
+                    current_chunk.append(line)
             else:
-                # Edge case: if this is the first non-header line and we don't have a chunk yet,
-                # create a new chunk starting with this line
-                current_chunk = [line]
+                # Not a bullet point and not a header - might be continuation text
+                # Add it only if we already have a chunk and it doesn't look like header text
+                if current_chunk and not is_job_header(line):
+                    current_chunk.append(line)
+                elif not current_chunk:
+                    # If this is the first line and doesn't match header patterns,
+                    # start a chunk anyway (could be an unusual resume format)
+                    current_chunk.append(line)
+            i += 1
     
     # Don't forget the last chunk
     if current_chunk:
@@ -253,9 +311,10 @@ def parse_job_entry(chunk):
     # PHASE 3: Extract and clean bullet points with proper limits
     bullets_start_idx = len(header_lines)
     bullets = []
+    current_bullet = None
     
     # Define valid bullet point characters
-    valid_bullet_chars = r'[•\-\*◦◈◇➢➣➤►→⁃]'
+    valid_bullet_chars = r'[•\-\*◦◈◇➢➣➤►→⁃▪]'
     
     # Define patterns that indicate a new job header
     new_job_pattern = re.compile(
@@ -266,9 +325,23 @@ def parse_job_entry(chunk):
     )
     
     job_title_pattern = re.compile(
-        r'\b(?:Analyst|Engineer|Developer|Manager|Director|Specialist|Associate|Consultant)\b', 
+        r'\b(?:Analyst|Engineer|Developer|Manager|Director|Specialist|Associate|Consultant|Coordinator|Assistant|Accountant)\b', 
         re.IGNORECASE
     )
+
+    # Define pattern for invalid bullet continuations (like new sentences unrelated to the bullet)
+    invalid_continuation_pattern = re.compile(
+        r'^(?:[A-Z][a-z]+\s+)?(?:I|We|The|This|That|These|Those|It)\b', 
+    )
+    
+    def is_job_header(line):
+        """Check if a line is likely the start of a new job entry"""
+        if (new_job_pattern.search(line) or 
+            (line.istitle() and not re.match(valid_bullet_chars, line)) or
+            (line.isupper() and len(line) < 30) or
+            (job_title_pattern.search(line) and len(line) < 60)):
+            return True
+        return False
     
     for i in range(bullets_start_idx, len(lines)):
         line = lines[i].strip()
@@ -278,24 +351,34 @@ def parse_job_entry(chunk):
             continue
         
         # Check if this might be the start of a new job entry
-        if (new_job_pattern.search(line) or 
-            (line.istitle() and not re.match(valid_bullet_chars, line)) or
-            (line.isupper() and len(line) < 30) or
-            (job_title_pattern.search(line) and len(line) < 60)):
+        if is_job_header(line):
             break
         
-        # Only process lines that start with valid bullet characters
+        # Check if this is a new bullet point
         if re.match(f'^{valid_bullet_chars}', line):
-            # Remove the bullet character and add to list
-            clean_bullet = re.sub(f'^{valid_bullet_chars}\s*', '', line).strip()
+            # If we have an existing bullet, add it to the list before starting new one
+            if current_bullet:
+                # Only add bullets that meet quality criteria
+                if len(current_bullet) > 15 and not current_bullet.endswith(('by', 'for', 'to', 'of', 'the', 'and', 'with', 'as', 'in')):
+                    bullets.append(current_bullet)
+                    
+                    # Cap bullets to maximum 6
+                    if len(bullets) >= 6:
+                        break
             
-            # Only add bullet points that are meaningful (not too short or incomplete)
-            if len(clean_bullet) > 10 and not clean_bullet.endswith(('by', 'for', 'to', 'of', 'the', 'and')):
-                bullets.append(clean_bullet)
-                
-                # Cap bullets to maximum 6
-                if len(bullets) >= 6:
-                    break
+            # Start a new bullet, removing the bullet character
+            clean_bullet = re.sub(f'^{valid_bullet_chars}\s*', '', line).strip()
+            current_bullet = clean_bullet
+        elif current_bullet:
+            # Only add continuation lines if they don't look like the start of a new paragraph
+            if not invalid_continuation_pattern.match(line) and not is_job_header(line):
+                # This is a continuation of the previous bullet
+                current_bullet += " " + line
+    
+    # Add the last bullet if it exists and meets quality criteria
+    if current_bullet and len(current_bullet) > 15 and not current_bullet.endswith(('by', 'for', 'to', 'of', 'the', 'and', 'with', 'as', 'in')):
+        if len(bullets) < 6:  # Only add if we're still under the limit
+            bullets.append(current_bullet)
     
     job_data["bullets"] = bullets
     
