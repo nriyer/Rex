@@ -43,6 +43,9 @@ def split_experience_section(text):
         line = line.strip()
         if not line:
             continue
+        if line.startswith(("•", "-", "–", "*", "·", "□", "■", "◆", "♦", "📌")):
+            continue  # 🚫 never treat bullets as job header lines
+
 
         # Skip bad header lines (contact, email, phone, address)
         if re.search(r"@|http|\.com|\d{3}[-.\s]?\d{3}[-.\s]?\d{4}", line.lower()):
@@ -90,6 +93,19 @@ def split_experience_section(text):
             ):
                 is_job_title = True
 
+        # Method 6: Title line followed by company + date
+        elif i + 1 < len(lines):
+            next_line = lines[i + 1].strip()
+            if (
+                any(title in line for title in ["Analyst", "Engineer", "Manager", "Accountant"])
+                and DATE_RANGE_PATTERN.search(next_line)
+                and not next_line.startswith(("•", "-", "*"))
+                and not any(stop in next_line.lower() for stop in STOP_KEYWORDS)
+            ):
+                print(f"📌 Detected job title on line {i}, company/date on line {i+1}")
+                is_job_title = True
+
+
 
     # If no job starts found, return the entire text as one job
     if not job_start_indices:
@@ -101,7 +117,30 @@ def split_experience_section(text):
         end_idx = job_start_indices[i + 1] if i < len(job_start_indices) - 1 else len(lines)
 
         # Slice out job lines
-        job_lines = lines[start_idx:end_idx]
+        # Include potential company name on the line before or after
+        job_lines = []
+
+        # 1. Include line above (company above header)
+        if start_idx > 0:
+            prev_line = lines[start_idx - 1].strip()
+            if (
+                prev_line
+                and not prev_line.startswith(("•", "-", "*", "·", "□", "■", "◆", "♦", "📌"))
+                and not DATE_RANGE_PATTERN.search(prev_line)
+                and not any(title in prev_line for title in ["Analyst", "Engineer", "Manager", "Accountant", "Developer", "Scientist", "Consultant"])
+                and not any(stop in prev_line.lower() for stop in STOP_KEYWORDS)
+                and not any(char in prev_line for char in ["@", ".", "www", "http"])
+                and not any(char.isdigit() for char in prev_line)
+                and len(prev_line.split()) <= 10
+                and prev_line[0].isupper()
+            ):
+
+                print(f"📌 Pulling company from line above: {prev_line}")
+                job_lines.append(prev_line)
+
+        # 2. Add header line and rest of chunk
+        job_lines.extend(lines[start_idx:end_idx])
+
 
         # Truncate the job if a STOP keyword appears mid-chunk
         truncated_lines = []

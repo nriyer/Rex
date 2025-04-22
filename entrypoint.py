@@ -1,7 +1,7 @@
 # === entrypoint.py ===
 
 from workflow import run_resume_enhancement_pipeline
-from parsing_module import extract_text_pdfplumber
+from Archive.parsing_module import extract_text_pdfplumber
 
 # === Step 1: Load resume (PDF)
 resume_path = "docs/sample_resume.pdf"

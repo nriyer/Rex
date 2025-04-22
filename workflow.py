@@ -1,8 +1,8 @@
 import os
 from dotenv import load_dotenv
 
-from parsing_module import split_resume_into_sections
-from experience_splitter import split_experience_section, parse_job_entry
+from Archive.parsing_module import split_resume_into_sections
+from Archive.experience_splitter import split_experience_section, parse_job_entry
 from keyword_matcher import extract_keywords, filter_relevant_keywords, compute_keyword_match
 from keyword_classifier import classify_keywords
 from keyword_scorer import score_keywords

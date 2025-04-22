@@ -3,7 +3,7 @@
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
-from experience_splitter import split_experience_section, parse_job_entry
+from Archive.experience_splitter import split_experience_section, parse_job_entry
 from typing import List
 from keyword_matcher import extract_keywords, filter_relevant_keywords
 

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from workflow import run_resume_enhancement_pipeline
-from parsing_module import extract_text_pdfplumber, extract_text_from_docx, extract_text_from_txt
+from Archive.parsing_module import extract_text_pdfplumber, extract_text_from_docx, extract_text_from_txt
 from pydantic import BaseModel
 from typing import Optional
 
