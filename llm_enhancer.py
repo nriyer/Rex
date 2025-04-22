@@ -85,29 +85,28 @@ def build_skills_prompt(skills_text: str, missing_keywords: list, format_type: s
     }[format_type]
 
     prompt = f"""
-You are enhancing the 'Skills' section of a resume.
+    You are enhancing the 'Skills' section of a resume.
 
-Here is the original Skills section:
+    Here is the original Skills section:
 
----
-{skills_text.strip()}
----
+    ---
+    {skills_text.strip()}
+    ---
 
-Below is a list of missing keywords from the job description:
+    Below is a list of missing keywords from the job description:
+    {", ".join(missing_keywords)}
 
-{", ".join(missing_keywords)}
+    🎯 Your task:
+    - Naturally incorporate as many relevant missing keywords as possible.
+    - Only include hard skills (tools, platforms, certifications, or directly measurable capabilities).
+    - If the existing section includes soft skills as a subcategory, only add soft skills to that portion.
+    - Avoid fabricating new skills unless they are *clearly implied* by the original.
+    - DO NOT repeat or re-list skills already present.
+    - **If the skills section is organized by category, rename the category headers to align with the key themes and terminology of the job description.**
+    - {format_instruction}
 
-🎯 Your task:
-- Naturally incorporate as many relevant missing keywords as possible.
-- Only include hard skills (tools, platforms, certifications, or directly measurable capabilities).
-- If the existing section includes soft skills as a subcategory, only add soft skills to that portion.
-- Avoid fabricating new skills unless they are *clearly implied* by the original.
-- DO NOT repeat or re-list skills already present.
-- **If the skills section is organized by category, rename the category headers to align with the key themes and terminology of the job description.**
-- {format_instruction}
-
-Return only the final enhanced skills section. No explanations.
-    """.strip()
+    Return only the final enhanced skills section. No explanations.
+        """.strip()
 
     return prompt
 
@@ -167,6 +166,7 @@ You are enhancing the bullet points of a single job from a professional resume.
 📌 Bullet Rules:
 - If the original job has <4 bullets, you may add 1–2 concise bullets only if clearly supported by the resume/JD.
 - If there are >6 bullets, trim to the best 4–6 lines. Prioritize impact and keyword relevance.
+- If job is short in length or early-career, prefer consolidating and limiting bullets to 3-4 at most.
 - **Do not fabricate job titles, results, or accomplishments.**
 - Highlight quantifiable impact if present — but do not invent numbers.
 
@@ -180,7 +180,13 @@ Return ONLY the enhanced bullets. Keep formatting consistent.
 # Builds a GPT prompt with build_experience_prompt(...)
 # Calls GPT-4 to rewrite the bullets
 # Returns a new job dict with the same title/company/date, but enhanced bullets
-def enhance_experience_job(job: dict, missing_keywords: List[str], job_posting: str) -> dict:
+def enhance_experience_job(
+    job: dict,
+    missing_keywords: List[str],
+    job_posting: str,
+    original_bullet_count: int  # 👈 Add this!
+) -> dict:
+
     """
     Enhance a single job entry using GPT-4.
     Inputs:
@@ -216,8 +222,14 @@ def enhance_experience_job(job: dict, missing_keywords: List[str], job_posting: 
             if line.strip()
         ]
                 # Enforce bullet limit: Keep at most 6
+        # ✅ Enforce bullet limit: max 2 more than original
+        if len(enhanced_bullets) > original_bullet_count + 2:
+            enhanced_bullets = enhanced_bullets[: original_bullet_count + 2]
+
+        # ✅ Also trim down if it's still longer than 6
         if len(enhanced_bullets) > 6:
             enhanced_bullets = enhanced_bullets[:6]
+
         return {
             "title": job["title"],
             "company": job["company"],

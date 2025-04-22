@@ -58,13 +58,15 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
 
     enhanced_jobs = []
     for job in experience_jobs:
-        if "bullets" not in job and "responsibilities" in job:
-            job["bullets"] = job.pop("responsibilities")
-        
-        enhanced_job = enhance_experience_job(job, pre_match["missing_keywords"], job_posting)
+        original_bullet_count = len(job.get("bullets", []))
+
+        enhanced_job = enhance_experience_job(
+            job,
+            pre_match["missing_keywords"],
+            job_posting,
+            original_bullet_count
+        )
         enhanced_jobs.append(enhanced_job)
-
-
 
     # Step 5: Format sections + assemble resume
     formatted_experience = format_experience_section(enhanced_jobs)
