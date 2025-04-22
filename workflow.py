@@ -25,6 +25,9 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
     if isinstance(skills_text, list):
         skills_text = ", ".join(skills_text)
     experience_jobs = sections.get("experience", [])  # Already structured list of job dicts
+    print("Parsed Experience Jobs:")
+    for i, job in enumerate(experience_jobs):
+        print(f"{i+1}. {job.get('title', '?')} @ {job.get('company', '?')}")
     education_text = sections.get("education", "Available upon request")
 
     if isinstance(education_text, list):
@@ -55,12 +58,12 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
 
     enhanced_jobs = []
     for job in experience_jobs:
-        for job in experience_jobs:
-        # Handle missing or misnamed bullets
-            if "bullets" not in job and "responsibilities" in job:
-                job["bullets"] = job.pop("responsibilities")
+        if "bullets" not in job and "responsibilities" in job:
+            job["bullets"] = job.pop("responsibilities")
+        
         enhanced_job = enhance_experience_job(job, pre_match["missing_keywords"], job_posting)
         enhanced_jobs.append(enhanced_job)
+
 
 
     # Step 5: Format sections + assemble resume

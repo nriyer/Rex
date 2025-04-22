@@ -5,7 +5,7 @@ from html_converter import convert_resume_to_html
 from pprint import pformat
 
 # === Step 1: Load resume (PDF)
-resume_path = "docs/sample_resume.pdf"
+resume_path = "docs/sample_resume_2.pdf"
 html_resume = convert_resume_to_html(resume_path)
 
 # === Step 2: Paste or load job posting

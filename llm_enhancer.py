@@ -52,7 +52,12 @@ Return ONLY the enhanced summary. Do not include explanations or headers.
         return summary_text  # fallback to original
 
 #Detect format of skills section (comma vs bullet separated)
-def detect_skills_format(skills_text: str) -> str:
+def detect_skills_format(skills_text: str | list | dict) -> str:
+    if isinstance(skills_text, dict):
+        # Flatten values into a comma-separated string
+        skills_text = ", ".join(
+            item for sublist in skills_text.values() for item in (sublist if isinstance(sublist, list) else [sublist])
+        )
     """
     Detects whether the skills section uses bullets or commas.
 
@@ -150,26 +155,22 @@ You are enhancing the bullet points of a single job from a professional resume.
 \"\"\"{job_posting.strip()}\"\"\"
 
 🎯 Your task:
-- Rewrite the above bullet points to improve clarity, strength, and relevance.
-- Integrate appropriate missing keywords naturally into the bullets (avoid stuffing).
-- *Use the job description to subtly guide the **focus and tone** of each bullet — so it sounds like the candidate has already worked in a similar role, even if they haven’t explicitly used every keyword.*
-- Phrase each bullet to sound relevant to the job posting's **industry, function, and focus**.
-- Emphasize **transferable achievements**, tools, and responsibilities that match the language, role, and context of the job description.
-- Even if the task was done in another field, match the **tone and framing** to the new target industry or role.
-- Do not fabricate job titles or accomplishments.
-- Preserve bullet format and keep each one concise and results-oriented.
-- Avoid generic filler (e.g., “responsible for”, “helped with”, “worked on”).
+You are enhancing the bullet points of a single job from a professional resume.
 
-📌 Bullet Count Rules:
-- If the job originally contains **more than 6 bullets**, trim down to the **6 most impactful**, keyword-rich bullets. Fewer is fine if the meaning can be consolidated.
-- If the job originally has **3 bullets or fewer**, you may add **up to 1 new bullet**, only if it's clearly additive and backed by the resume/job description.
-- **Do NOT invent new responsibilities** unless they are clearly implied by the resume or JD.
-- **Prioritize rewording existing bullets** to include missing keywords, improve tone, and increase relevance.
-- Keep total bullet count **close to original**, ideally **no more than +2 bullets max** if content is light.
-- Each bullet should be **1 line long**, unless absolutely necessary to preserve clarity.
-- *If metrics or quantifiable outcomes are implied or present, highlight them clearly. **Do not fabricate numbers or results** — only emphasize what's already supported.*
+- Rewrite each bullet to improve clarity, strength, and relevance.
+- Integrate missing keywords naturally. No keyword stuffing.
+- Match tone and terminology to the job posting (role, function, tools).
+- Emphasize transferable accomplishments backed by the resume — not invented.
+- Use 1 bullet per line. Combine similar ideas when possible.
+- Avoid filler phrases: “responsible for”, “worked on”, etc.
 
-Return ONLY the enhanced bullet points. Maintain bullet format.
+📌 Bullet Rules:
+- If the original job has <4 bullets, you may add 1–2 concise bullets only if clearly supported by the resume/JD.
+- If there are >6 bullets, trim to the best 4–6 lines. Prioritize impact and keyword relevance.
+- **Do not fabricate job titles, results, or accomplishments.**
+- Highlight quantifiable impact if present — but do not invent numbers.
+
+Return ONLY the enhanced bullets. Keep formatting consistent.
 
     """.strip()
 
@@ -192,8 +193,12 @@ def enhance_experience_job(job: dict, missing_keywords: List[str], job_posting: 
     from openai import OpenAI  # Ensure OpenAI is loaded after dotenv
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+    bullets = job["bullets"]
+    if isinstance(bullets, str):
+        bullets = bullets.splitlines()
+
     prompt = build_experience_prompt(
-        bullets=job["bullets"],
+        bullets=bullets,
         missing_keywords=missing_keywords,
         job_posting=job_posting,
     )
@@ -210,6 +215,9 @@ def enhance_experience_job(job: dict, missing_keywords: List[str], job_posting: 
             for line in enhanced_text.splitlines()
             if line.strip()
         ]
+                # Enforce bullet limit: Keep at most 6
+        if len(enhanced_bullets) > 6:
+            enhanced_bullets = enhanced_bullets[:6]
         return {
             "title": job["title"],
             "company": job["company"],
