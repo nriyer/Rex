@@ -64,10 +64,13 @@ def assemble_resume(summary: str, skills: str, experience: str, education: str =
         lines.append(skills.strip())
         lines.append("")
 
-    if experience.strip():
+    if experience:
         lines.append("EXPERIENCE")
         lines.append("----------")
-        lines.append(experience.strip())
+        if isinstance(experience, list):
+            lines.extend([line.strip() for line in experience])
+        else:
+            lines.append(experience.strip())
         lines.append("")
 
     if education.strip():

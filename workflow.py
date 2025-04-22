@@ -1,8 +1,6 @@
 import os
 from dotenv import load_dotenv
-
-from Archive.parsing_module import split_resume_into_sections
-from Archive.experience_splitter import split_experience_section, parse_job_entry
+from gpt_parser import parse_resume_with_gpt
 from keyword_matcher import extract_keywords, filter_relevant_keywords, compute_keyword_match
 from keyword_classifier import classify_keywords
 from keyword_scorer import score_keywords
@@ -21,11 +19,26 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
     Returns enhanced resume string and a scoring summary dictionary.
     """
     # Step 1: Parse resume sections
-    sections = split_resume_into_sections(resume_text)
+    sections = parse_resume_with_gpt(resume_text)
     summary_text = sections.get("summary", "")
     skills_text = sections.get("skills", "")
-    experience_text = sections.get("experience", "")
+    if isinstance(skills_text, list):
+        skills_text = ", ".join(skills_text)
+    experience_jobs = sections.get("experience", [])  # Already structured list of job dicts
     education_text = sections.get("education", "Available upon request")
+
+    if isinstance(education_text, list):
+        # Flatten list of dicts into readable lines
+        formatted_edu = []
+        for edu in education_text:
+            if isinstance(edu, dict):
+                parts = [edu.get("degree", ""), edu.get("field", ""), edu.get("institution", "")]
+                formatted_edu.append(" | ".join(part for part in parts if part))
+            elif isinstance(edu, str):
+                formatted_edu.append(edu)
+        education_text = "\n".join(formatted_edu)
+
+
 
     # Step 2: Extract and filter job description keywords
     raw_keywords = extract_keywords(job_posting)
@@ -40,12 +53,15 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
     enhanced_summary = enhance_summary_with_gpt(summary_text, pre_match["missing_keywords"])
     enhanced_skills = enhance_skills_with_gpt(skills_text, pre_match["missing_keywords"])
 
-    experience_chunks = split_experience_section(experience_text)
     enhanced_jobs = []
-    for chunk in experience_chunks:
-        parsed_job = parse_job_entry(chunk)
-        enhanced_job = enhance_experience_job(parsed_job, pre_match["missing_keywords"], job_posting)
+    for job in experience_jobs:
+        for job in experience_jobs:
+        # Handle missing or misnamed bullets
+            if "bullets" not in job and "responsibilities" in job:
+                job["bullets"] = job.pop("responsibilities")
+        enhanced_job = enhance_experience_job(job, pre_match["missing_keywords"], job_posting)
         enhanced_jobs.append(enhanced_job)
+
 
     # Step 5: Format sections + assemble resume
     formatted_experience = format_experience_section(enhanced_jobs)

@@ -1,11 +1,12 @@
 # === entrypoint.py ===
 
 from workflow import run_resume_enhancement_pipeline
-from Archive.parsing_module import extract_text_pdfplumber
+from html_converter import convert_resume_to_html
+from pprint import pformat
 
 # === Step 1: Load resume (PDF)
 resume_path = "docs/sample_resume.pdf"
-resume_text = extract_text_pdfplumber(resume_path)
+html_resume = convert_resume_to_html(resume_path)
 
 # === Step 2: Paste or load job posting
 job_posting = """
@@ -35,14 +36,13 @@ Experience working with SQL, Python, or another programming language preferred.
 """
 
 # === Step 3: Run the enhancement pipeline
-final_resume, score_report = run_resume_enhancement_pipeline(resume_text, job_posting)
+final_resume, score_report = run_resume_enhancement_pipeline(html_resume, job_posting)
 
 # === Step 4: Export enhanced resume to .txt
 with open("enhanced_resume.txt", "w", encoding="utf-8") as f:
     f.write(final_resume)
 
 # === Step 5: Export score report to .txt
-from pprint import pformat
 
 with open("score_report.txt", "w", encoding="utf-8") as f:
     f.write("SCORE REPORT\n")

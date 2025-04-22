@@ -32,7 +32,16 @@ def parse_resume_with_gpt(html_resume: str) -> dict:
         {html_resume}
 
         Return ONLY a JSON object with keys: summary, skills, education, and experience.
-        Do NOT explain or introduce the output. Only JSON.
+
+        For the `experience` key:
+        - Return a list of job objects.
+        - Each job object MUST contain:
+        - "title"
+        - "company"
+        - "date_range"
+        - "bullets" ← (this must be the field name)
+        - Do NOT use any alternative keys like "responsibilities" or "tasks".
+
         """
 
         # Call the OpenAI API

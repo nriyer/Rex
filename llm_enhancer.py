@@ -59,6 +59,9 @@ def detect_skills_format(skills_text: str) -> str:
     Returns:
         'bullet' or 'comma'
     """
+    if isinstance(skills_text, list):
+        return "comma"  # Treat lists as comma-separated
+
     if any(skills_text.strip().startswith(prefix) for prefix in ("•", "-", "*")):
         return "bullet"
     elif "," in skills_text:
