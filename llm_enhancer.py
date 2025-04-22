@@ -3,7 +3,6 @@
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
-from Archive.experience_splitter import split_experience_section, parse_job_entry
 from typing import List
 from keyword_matcher import extract_keywords, filter_relevant_keywords
 
@@ -157,10 +156,18 @@ You are enhancing the bullet points of a single job from a professional resume.
 - Do not fabricate job titles or accomplishments.
 - Preserve bullet format and keep each one concise and results-oriented.
 - Avoid generic filler (e.g., “responsible for”, “helped with”, “worked on”).
--*Trim total bullet count to 6 or fewer, combining similar ideas if needed. Keep ONLY the most impactful, quantifiable, and relevant accomplishments, based on what's most relevant to JOB POSTING.*
--Each bullet should be 1 line long, unless absolutely necessary to preserve clarity.
--*If metrics or quantifiable outcomes are implied or present, highlight them clearly. **Do not fabricate numbers or results** — only emphasize what’s already supported.*
+
+📌 Bullet Count Rules:
+- If the job originally contains **more than 6 bullets**, trim down to the **6 most impactful**, keyword-rich bullets. Fewer is fine if the meaning can be consolidated.
+- If the job originally has **3 bullets or fewer**, you may add **up to 1 new bullet**, only if it's clearly additive and backed by the resume/job description.
+- **Do NOT invent new responsibilities** unless they are clearly implied by the resume or JD.
+- **Prioritize rewording existing bullets** to include missing keywords, improve tone, and increase relevance.
+- Keep total bullet count **close to original**, ideally **no more than +2 bullets max** if content is light.
+- Each bullet should be **1 line long**, unless absolutely necessary to preserve clarity.
+- *If metrics or quantifiable outcomes are implied or present, highlight them clearly. **Do not fabricate numbers or results** — only emphasize what's already supported.*
+
 Return ONLY the enhanced bullet points. Maintain bullet format.
+
     """.strip()
 
     return prompt
