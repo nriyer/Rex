@@ -246,3 +246,46 @@ def enhance_experience_job(
     except Exception as e:
         print(f"[Experience Enhancement Error] {e}")
         return job  # fallback to original
+
+def build_projects_prompt(projects_text, missing_keywords: list) -> str:
+    if isinstance(projects_text, dict):
+        projects_text = projects_text.get("text", "")
+    elif isinstance(projects_text, list):
+        projects_text = "\n".join(str(item) for item in projects_text)
+    elif not isinstance(projects_text, str):
+        projects_text = str(projects_text)    
+        """
+    Constructs a GPT prompt to enhance the projects section without increasing length.
+    """
+    return f"""
+You are enhancing the 'Projects' section of a resume.
+
+The original content is below:
+
+---
+{projects_text.strip()}
+---
+
+🎯 Your task:
+- Improve clarity, formatting, and relevance to match the tone of a professional job description.
+- Use strong action verbs and rephrase for conciseness and clarity.
+- Incorporate the following missing keywords naturally, if relevant: {", ".join(missing_keywords)}
+- DO NOT add new lines or bullets — total length must be the same or shorter.
+- Avoid exaggeration, duplication, or fabricating new projects.
+- Remove filler, clarify outcomes, and emphasize real technical work.
+
+Return only the enhanced projects section. No explanations or headers.
+    """.strip()
+
+def enhance_projects_with_gpt(projects_text, missing_keywords: list) -> str:
+    prompt = build_projects_prompt(projects_text, missing_keywords)
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print(f"[Projects Enhancement Error] {e}")
+        return projects_text  # fallback

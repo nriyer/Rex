@@ -45,7 +45,7 @@ def format_experience_section(jobs: List[dict]) -> str:
     return result
 
 
-def assemble_resume(summary: str, skills: str, experience: str, education: str = "") -> str:
+def assemble_resume(summary: str, skills: str, experience: str, education: str = "", projects: str = "") -> str:
     """
     Combines all enhanced resume sections into one clean final string.
     Adds section headers and spacing.
@@ -77,5 +77,12 @@ def assemble_resume(summary: str, skills: str, experience: str, education: str =
         lines.append("EDUCATION")
         lines.append("---------")
         lines.append(education.strip())
+        lines.append("")
+
+    if projects.strip():
+        lines.append("PROJECTS")
+        lines.append("--------")
+        lines.append(projects.strip())
+        lines.append("")
 
     return "\n".join(lines).strip()

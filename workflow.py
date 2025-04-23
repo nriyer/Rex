@@ -7,7 +7,8 @@ from keyword_scorer import score_keywords
 from llm_enhancer import (
     enhance_summary_with_gpt,
     enhance_skills_with_gpt,
-    enhance_experience_job
+    enhance_experience_job,
+    enhance_projects_with_gpt
 )
 from resume_formatter import format_experience_section, assemble_resume
 
@@ -29,6 +30,15 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
     for i, job in enumerate(experience_jobs):
         print(f"{i+1}. {job.get('title', '?')} @ {job.get('company', '?')}")
     education_text = sections.get("education", "Available upon request")
+    projects_text = sections.get("projects", "")
+    try:
+        enhanced_projects = enhance_projects_with_gpt(projects_text, pre_match["missing_keywords"])
+    except Exception as e:
+        print("\n🛑 ERROR: Projects enhancement failed")
+        print(e)
+        enhanced_projects = projects_text
+
+
 
     if isinstance(education_text, list):
         # Flatten list of dicts into readable lines
@@ -89,7 +99,8 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
         summary=enhanced_summary,
         skills=enhanced_skills,
         experience=formatted_experience,
-        education=education_text
+        education=education_text,
+        projects=enhanced_projects
     )
 
     # Step 6: Post-enhancement scoring
