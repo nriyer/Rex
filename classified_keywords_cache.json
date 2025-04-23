@@ -140,5 +140,22 @@
   "quantitative": "domain_knowledge",
   "seaborn": "tool_platform",
   "statistical": "domain_knowledge",
-  "technical": "domain_knowledge"
+  "technical": "domain_knowledge",
+  "mlflow": "tool_platform",
+  "mlop": "tool_platform",
+  "user": "tool_platform",
+  "algorithm": "domain_knowledge",
+  "arima": "domain_knowledge",
+  "clustering": "domain_knowledge",
+  "code": "tool_platform",
+  "forecast": "domain_knowledge",
+  "logistic": "domain_knowledge",
+  "network": "domain_knowledge",
+  "neural": "domain_knowledge",
+  "prediction": "domain_knowledge",
+  "program": "tool_platform",
+  "prophet": "domain_knowledge",
+  "regression": "domain_knowledge",
+  "scientist": "domain_knowledge",
+  "xgboost": "tool_platform"
 }

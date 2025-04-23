@@ -53,20 +53,35 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
     pre_scores = score_keywords(classified_keywords, pre_match["matched_keywords"])
 
     # Step 4: Enhance each resume section
-    enhanced_summary = enhance_summary_with_gpt(summary_text, pre_match["missing_keywords"])
-    enhanced_skills = enhance_skills_with_gpt(skills_text, pre_match["missing_keywords"])
+    try:
+        enhanced_summary = enhance_summary_with_gpt(summary_text, pre_match["missing_keywords"])
+    except Exception as e:
+        print("\n🛑 ERROR: Summary enhancement failed")
+        print(e)
+        raise
+
+    try:
+        enhanced_skills = enhance_skills_with_gpt(skills_text, pre_match["missing_keywords"])
+    except Exception as e:
+        print("\n🛑 ERROR: Skills enhancement failed")
+        print(e)
+        raise
 
     enhanced_jobs = []
-    for job in experience_jobs:
-        original_bullet_count = len(job.get("bullets", []))
-
-        enhanced_job = enhance_experience_job(
-            job,
-            pre_match["missing_keywords"],
-            job_posting,
-            original_bullet_count
-        )
-        enhanced_jobs.append(enhanced_job)
+    try:
+        for job in experience_jobs:
+            original_bullet_count = len(job.get("bullets", []))
+            enhanced_job = enhance_experience_job(
+                job,
+                pre_match["missing_keywords"],
+                job_posting,
+                original_bullet_count
+            )
+            enhanced_jobs.append(enhanced_job)
+    except Exception as e:
+        print("\n🛑 ERROR: Experience enhancement failed")
+        print(e)
+        raise
 
     # Step 5: Format sections + assemble resume
     formatted_experience = format_experience_section(enhanced_jobs)

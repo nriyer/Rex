@@ -74,15 +74,21 @@ def detect_skills_format(skills_text: str | list | dict) -> str:
     else:
         return "unknown"
 
-def build_skills_prompt(skills_text: str, missing_keywords: list, format_type: str) -> str:
+def build_skills_prompt(skills_text, missing_keywords: list, format_type: str) -> str:
+    if isinstance(skills_text, dict):
+        skills_text = skills_text.get("text", "")  # fallback if some bug passed it in wrapped
+    elif not isinstance(skills_text, str):
+        skills_text = str(skills_text)
+
     """
     Builds a GPT prompt for enhancing the skills section.
     """
     format_instruction = {
-        "comma": "Return a clean, comma-separated list.",
-        "bullet": "Return each skill as a short bullet point (use • or -).",
-        "unknown": "Use a clean and readable format to list skills."
+    "comma": "Group skills by theme using headers like 'Machine Learning & NLP', 'Cloud & Data', etc. Return each group on a new line. Separate individual skills with commas.",
+    "bullet": "Group skills by theme using headers like 'Machine Learning & NLP', 'Cloud & Data', etc. Return each group as a bulleted list under that header.",
+    "unknown": "Organize skills by logical groupings with readable headers and line breaks. Avoid a single block of text."
     }[format_type]
+
 
     prompt = f"""
     You are enhancing the 'Skills' section of a resume.

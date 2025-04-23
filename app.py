@@ -192,7 +192,7 @@ if st.button("Optimize Resume", type="primary"):
                 response = requests.post(
                     'http://localhost:8000/optimize-resume',
                     json={
-                        'resume_text': st.session_state.resume_text,
+                        "html_resume": st.session_state.resume_text,
                         'job_posting': st.session_state.job_description
                     }
                 )
