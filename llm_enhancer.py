@@ -267,15 +267,20 @@ The original content is below:
 ---
 
 🎯 Your task:
-- Improve clarity, formatting, and relevance to match the tone of a professional job description.
-- Use strong action verbs and rephrase for conciseness and clarity.
-- Incorporate the following missing keywords naturally, if relevant: {", ".join(missing_keywords)}
-- DO NOT add new lines or bullets — total length must be the same or shorter.
-- Avoid exaggeration, duplication, or fabricating new projects.
-- Remove filler, clarify outcomes, and emphasize real technical work.
+- Rewrite each project entry using the following format:
+  📌 [Project Name]
+  • Bullet 1 (skill/action/result based)
+  • Bullet 2
+  • Keep each project to 2–4 bullets MAX
+- Combine empty or fragmented lines into concise bullets.
+- Eliminate duplicate or redundant phrasing.
+- Integrate these missing keywords naturally if relevant: {", ".join(missing_keywords)}
+- DO NOT invent new projects or accomplishments.
+- Total project section length must be the same or **shorter** than the original.
+- Format bullets clearly and consistently. No empty lines or full paragraphs.
 
-Return only the enhanced projects section. No explanations or headers.
-    """.strip()
+Return only the improved Projects section — no section header, no explanations.
+""".strip()
 
 def enhance_projects_with_gpt(projects_text, missing_keywords: list) -> str:
     prompt = build_projects_prompt(projects_text, missing_keywords)

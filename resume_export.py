@@ -252,6 +252,14 @@ MODERN_TEMPLATE = """
             padding-bottom: 10px;
             border-bottom: 1px dotted #ddd;
         }
+        h3 {
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 8px;
+            margin-bottom: 4px;
+            color: #2c3e50;
+        }
+
     </style>
 </head>
 <body>

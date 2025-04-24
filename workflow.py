@@ -19,18 +19,43 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
     Executes the full resume enhancement pipeline and scoring logic.
     Returns enhanced resume string and a scoring summary dictionary.
     """
+        
+        # Extract and filter job description keywords
+    raw_keywords = extract_keywords(job_posting)
+    filtered_keywords = filter_relevant_keywords(list(raw_keywords))
+    classified_keywords = classify_keywords(filtered_keywords)
+
+        # Compute pre-enhancement keyword match and score
+    pre_match = compute_keyword_match(resume_text, job_posting)
+    pre_scores = score_keywords(classified_keywords, pre_match["matched_keywords"])
+
     # Step 1: Parse resume sections
     sections = parse_resume_with_gpt(resume_text)
+
     summary_text = sections.get("summary", "")
+    if isinstance(summary_text, list):
+        summary_text = " ".join(str(s) for s in summary_text)
+    elif not isinstance(summary_text, str):
+        summary_text = str(summary_text)
+
     skills_text = sections.get("skills", "")
     if isinstance(skills_text, list):
-        skills_text = ", ".join(skills_text)
-    experience_jobs = sections.get("experience", [])  # Already structured list of job dicts
+        skills_text = ", ".join(str(s) for s in skills_text)
+    elif not isinstance(skills_text, str):
+        skills_text = str(skills_text)
+
+    experience_jobs = sections.get("experience", [])
     print("Parsed Experience Jobs:")
     for i, job in enumerate(experience_jobs):
         print(f"{i+1}. {job.get('title', '?')} @ {job.get('company', '?')}")
+
     education_text = sections.get("education", "Available upon request")
     projects_text = sections.get("projects", "")
+    if isinstance(projects_text, list):
+        projects_text = "\n".join(str(p) for p in projects_text)
+    elif not isinstance(projects_text, str):
+        projects_text = str(projects_text)
+
     try:
         enhanced_projects = enhance_projects_with_gpt(projects_text, pre_match["missing_keywords"])
     except Exception as e:
@@ -38,10 +63,8 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
         print(e)
         enhanced_projects = projects_text
 
-
-
+    # Clean/flatten education if needed
     if isinstance(education_text, list):
-        # Flatten list of dicts into readable lines
         formatted_edu = []
         for edu in education_text:
             if isinstance(edu, dict):
@@ -52,15 +75,6 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
         education_text = "\n".join(formatted_edu)
 
 
-
-    # Step 2: Extract and filter job description keywords
-    raw_keywords = extract_keywords(job_posting)
-    filtered_keywords = filter_relevant_keywords(list(raw_keywords))
-    classified_keywords = classify_keywords(filtered_keywords)
-
-    # Step 3: Compute pre-enhancement keyword match and score
-    pre_match = compute_keyword_match(resume_text, job_posting)
-    pre_scores = score_keywords(classified_keywords, pre_match["matched_keywords"])
 
     # Step 4: Enhance each resume section
     try:

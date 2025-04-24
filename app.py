@@ -142,7 +142,7 @@ with col1:
                     files = {'file': f}
                     response = requests.post('http://localhost:8000/extract-text', files=files)
                     if response.status_code == 200:
-                        st.session_state.resume_text = response.json()['text']
+                        st.session_state.resume_text = response.json()['html_resume']
                         
                         # Extract contact info from the resume text
                         detected_contact_info = extract_contact_info(st.session_state.resume_text)

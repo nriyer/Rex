@@ -157,5 +157,12 @@
   "prophet": "domain_knowledge",
   "regression": "domain_knowledge",
   "scientist": "domain_knowledge",
-  "xgboost": "tool_platform"
+  "xgboost": "tool_platform",
+  "automated": "tool_platform",
+  "entry-level": "other",
+  "evaluate": "soft_skill",
+  "gather": "soft_skill",
+  "implement": "tool_platform",
+  "k-mean": "domain_knowledge",
+  "random": "domain_knowledge"
 }
