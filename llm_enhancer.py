@@ -268,10 +268,13 @@ The original content is below:
 
 🎯 Your task:
 - Rewrite each project entry using the following format:
-  📌 [Project Name]
+  PROJECT TITLE (on its own line, in all caps or bold)
   • Bullet 1 (skill/action/result based)
-  • Bullet 2
-  • Keep each project to 2–4 bullets MAX
+  • Bullet 2 (no more than 3–4 per project)
+- DO NOT use brackets [ ] around titles
+- DO NOT prefix titles with icons or bullets
+- DO NOT increase font size of Project Title
+- Make titles visually distinct by writing them in all caps
 - Combine empty or fragmented lines into concise bullets.
 - Eliminate duplicate or redundant phrasing.
 - Integrate these missing keywords naturally if relevant: {", ".join(missing_keywords)}

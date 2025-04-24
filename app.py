@@ -203,6 +203,15 @@ if st.button("Optimize Resume", type="primary"):
                     # Store the result in session state for later use
                     st.session_state.enhanced_resume = result['enhanced_resume']
                     st.session_state.score_report = result['score_report']
+
+                                        # === NEW: Handle contact_info returned from backend ===
+                    if 'contact_info' in result:
+                        for key, value in result['contact_info'].items():
+                            # Try multiple fallback keys for "name"
+                            if value and not st.session_state.contact_info.get(key):
+                                st.session_state.contact_info[key] = value
+
+
                     
                     # Display enhanced resume
                     st.subheader("Enhanced Resume")

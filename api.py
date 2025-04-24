@@ -45,7 +45,7 @@ async def extract_text(file: UploadFile = File(...)):
 async def optimize_resume(request: ResumeOptimizationRequest):
     try:
         # Run enhancement pipeline
-        final_resume, score_report = run_resume_enhancement_pipeline(
+        final_resume, score_report, contact_info = run_resume_enhancement_pipeline(
             request.html_resume,
             request.job_posting
         )
@@ -53,7 +53,11 @@ async def optimize_resume(request: ResumeOptimizationRequest):
         # Return result
         return {
             "enhanced_resume": final_resume,
-            "score_report": score_report
+            "score_report": score_report,
+            "contact_info": contact_info
         }
     except Exception as e:
+        import traceback
+        print("❌ API Error during resume optimization:")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))

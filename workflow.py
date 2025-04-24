@@ -32,6 +32,24 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
     # Step 1: Parse resume sections
     sections = parse_resume_with_gpt(resume_text)
 
+    contact_info = sections.get("contact_info", {})
+    # Robust fallback: sanitize to dict even if GPT returns weird types
+    if isinstance(contact_info, list):
+        # Try to infer from list of strings
+        contact_info = {f"item_{i}": str(item) for i, item in enumerate(contact_info)}
+    elif isinstance(contact_info, str):
+        contact_info = {"raw": contact_info.strip()}
+    elif not isinstance(contact_info, dict):
+        contact_info = {}
+        # === Normalize name key from common fallbacks ===
+    if not contact_info.get("name"):
+        contact_info["name"] = (
+            contact_info.get("full_name") or
+            contact_info.get("title") or
+            contact_info.get("raw") or
+            ""
+        )
+
     summary_text = sections.get("summary", "")
     if isinstance(summary_text, list):
         summary_text = " ".join(str(s) for s in summary_text)
@@ -134,4 +152,4 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
         "missing_keywords_after": post_match["missing_keywords"]
     }
 
-    return final_resume, score_report
+    return final_resume, score_report, contact_info

@@ -27,13 +27,24 @@ def parse_resume_with_gpt(html_resume: str) -> dict:
         system_prompt = (
             "You are a resume parser. Given a resume in HTML format, extract each logical section and return it as structured JSON. "
             "Do not modify, rewrite, summarize, or enhance any content. Preserve original bullet points and section text exactly as-is.\n\n"
-            "Normalize similar section headers as follows:\n"
-            "- 'Professional Summary', 'Objective', 'Overview' → 'summary'\n"
-            "- 'Technical Skills', 'Tools', 'Tech Stack' → 'skills'\n"
-            "- 'Work History', 'Professional Experience', 'Employment' → 'experience'\n"
-            "- 'Education and Certifications', 'Certifications', 'Degrees' → 'education'\n"
-            "- 'Projects', 'Capstone Projects', 'Independent Work', 'Freelance', 'Other Work' → 'projects'\n\n"
-            "Return only a JSON object with keys: summary, skills, education, experience, and projects."
+            "🎯 JSON output must include:\n"
+            "- contact_info (see format below)\n"
+            "- summary\n"
+            "- skills\n"
+            "- experience (as list of jobs)\n"
+            "- education\n"
+            "- projects\n\n"
+
+            "🧾 For `contact_info`, infer any of the following fields from the top of the resume:\n"
+            "  'name', 'title', 'email', 'phone', 'location', 'linkedin', 'github', 'website'\n"
+            "Only include fields that can be reasonably inferred.\n\n"
+                    "Normalize similar section headers as follows:\n"
+                    "- 'Professional Summary', 'Objective', 'Overview' → 'summary'\n"
+                    "- 'Technical Skills', 'Tools', 'Tech Stack' → 'skills'\n"
+                    "- 'Work History', 'Professional Experience', 'Employment' → 'experience'\n"
+                    "- 'Education and Certifications', 'Certifications', 'Degrees' → 'education'\n"
+                    "- 'Projects', 'Capstone Projects', 'Independent Work', 'Freelance', 'Other Work' → 'projects'\n\n"
+                    "Return only a JSON object with keys: summary, skills, education, experience, and projects."
         )
 
 
