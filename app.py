@@ -151,6 +151,7 @@ with col1:
                         for key, value in detected_contact_info.items():
                             if value and not st.session_state.contact_info.get(key):
                                 st.session_state.contact_info[key] = value
+                            
                         
                         st.success("Resume uploaded successfully!")
                     else:
@@ -210,6 +211,12 @@ if st.button("Optimize Resume", type="primary"):
                             # Try multiple fallback keys for "name"
                             if value and not st.session_state.contact_info.get(key):
                                 st.session_state.contact_info[key] = value
+                            # Normalize "name" into Full Name field
+                            if 'name' not in st.session_state.contact_info or not st.session_state.contact_info['name']:
+                                st.session_state.contact_info['name'] = result['contact_info'].get('full_name') or \
+                                                                        result['contact_info'].get('title') or \
+                                                                        result['contact_info'].get('raw') or ''
+
 
 
                     
@@ -258,136 +265,67 @@ if st.button("Optimize Resume", type="primary"):
                 st.error(f"An error occurred: {str(e)}")
 
 # Add this after displaying the enhanced resume
-# After we have an enhanced resume and before we show export options
+# === EXPORT SECTION (after Enhanced Resume is shown) ===
 if st.session_state.enhanced_resume:
     st.subheader("Export Options")
-    
-    # Let's ensure contact info is collected and used
-    with st.expander("Contact Information for Resume Header", expanded=True):
-        st.info("This information will appear in your resume header. At minimum, provide your name.")
-        contact_col1, contact_col2 = st.columns(2)
-        
-        with contact_col1:
-            st.session_state.contact_info['name'] = st.text_input("Full Name", 
-                value=st.session_state.contact_info.get('name', ''),
-                key="contact_name")
-            st.session_state.contact_info['email'] = st.text_input("Email", 
-                value=st.session_state.contact_info.get('email', ''),
-                key="contact_email")
-            st.session_state.contact_info['phone'] = st.text_input("Phone", 
-                value=st.session_state.contact_info.get('phone', ''),
-                key="contact_phone")
-            st.session_state.contact_info['location'] = st.text_input("Location", 
-                value=st.session_state.contact_info.get('location', ''), 
-                help="City, State or Country",
-                key="contact_location")
-        
-        with contact_col2:
-            st.session_state.contact_info['linkedin'] = st.text_input("LinkedIn URL", 
-                value=st.session_state.contact_info.get('linkedin', ''),
-                key="contact_linkedin")
-            st.session_state.contact_info['github'] = st.text_input("GitHub URL", 
-                value=st.session_state.contact_info.get('github', ''),
-                key="contact_github")
-            st.session_state.contact_info['website'] = st.text_input("Personal Website", 
-                value=st.session_state.contact_info.get('website', ''),
-                key="contact_website")
-    
-    # Create columns for formatting options
+
+    # Optional manual contact override
+    if st.checkbox("Manually edit contact info", value=False):
+        with st.expander("Contact Information for Resume Header", expanded=True):
+            st.info("This information will appear in your resume header. At minimum, provide your name.")
+            contact_col1, contact_col2 = st.columns(2)
+
+            with contact_col1:
+                st.session_state.contact_info['name'] = st.text_input("Full Name", value=st.session_state.contact_info.get('name', ''), key="contact_name")
+                st.session_state.contact_info['email'] = st.text_input("Email", value=st.session_state.contact_info.get('email', ''), key="contact_email")
+                st.session_state.contact_info['phone'] = st.text_input("Phone", value=st.session_state.contact_info.get('phone', ''), key="contact_phone")
+                st.session_state.contact_info['location'] = st.text_input("Location", value=st.session_state.contact_info.get('location', ''), key="contact_location", help="City, State or Country")
+
+            with contact_col2:
+                st.session_state.contact_info['linkedin'] = st.text_input("LinkedIn URL", value=st.session_state.contact_info.get('linkedin', ''), key="contact_linkedin")
+                st.session_state.contact_info['github'] = st.text_input("GitHub URL", value=st.session_state.contact_info.get('github', ''), key="contact_github")
+                st.session_state.contact_info['website'] = st.text_input("Personal Website", value=st.session_state.contact_info.get('website', ''), key="contact_website")
+
+    # Export format + style
     format_col1, format_col2 = st.columns(2)
-    
     with format_col1:
-        # Resume style selection
         st.markdown("**Resume Style**")
-        resume_style = st.selectbox(
-            "Choose formatting style:",
-            options=get_available_styles(),
-            index=0,
-            help="Select a style for your resume export",
-            key="resume_style"
-        )
-        
-        # Add an explanation of the selected style
+        resume_style = st.selectbox("Choose formatting style:", options=get_available_styles(), index=0, key="resume_style")
         if resume_style == "ATS-Friendly":
             st.info("Simple, clean format optimized for Applicant Tracking Systems.")
         elif resume_style == "Modern":
             st.info("Contemporary design with clean spacing and subtle color accents.")
         elif resume_style == "Professional":
             st.info("Traditional serif fonts with formal formatting for conservative industries.")
-    
+
     with format_col2:
-        # Export format selection
         st.markdown("**File Format**")
-        export_format = st.radio(
-            "Choose export format:",
-            options=["PDF", "DOCX", "TXT"],
-            index=0,
-            horizontal=True,
-            help="Select which file format to download",
-            key="export_format"
-        )
-        
-        # Show advanced options for PDF if selected
+        export_format = st.radio("Choose export format:", ["PDF", "DOCX", "TXT"], index=0, horizontal=True, key="export_format")
         if export_format == "PDF":
             with st.expander("PDF Generation Troubleshooting"):
                 st.markdown("""
                 **Note:** PDF generation requires wkhtmltopdf to be installed on your system.
-                
+
                 If you're having issues:
                 1. Make sure [wkhtmltopdf](https://wkhtmltopdf.org/downloads.html) is installed
                 2. If installed but not found, specify the path below
                 """)
-                
-                wkhtmltopdf_path = st.text_input(
-                    "Path to wkhtmltopdf (optional):",
-                    placeholder="e.g., C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe",
-                    help="Leave empty to use system PATH",
-                    key="wkhtmltopdf_path"
-                )
-                
+                wkhtmltopdf_path = st.text_input("Path to wkhtmltopdf (optional):", placeholder="e.g. C:\\Program Files\\wkhtmltopdf\\bin\\wkhtmltopdf.exe", key="wkhtmltopdf_path")
                 if wkhtmltopdf_path:
-                    # Import here to avoid circular imports
                     import resume_export
                     resume_export.WKHTMLTOPDF_PATH = wkhtmltopdf_path
-    
-    # Generate download buttons based on selection
+
+    # Download section
     export_col1, export_col2, export_col3 = st.columns([1, 2, 1])
-    
     with export_col2:
         if export_format == "PDF":
-            # Check if PDF generation is enabled
-            pdf_enabled = False
             try:
                 from resume_export import ENABLE_PDF_GENERATION
-                pdf_enabled = ENABLE_PDF_GENERATION
-            except ImportError:
-                pdf_enabled = False
-            
-            if not pdf_enabled:
-                st.warning("""
-                PDF generation is currently disabled. To enable it:
-                
-                1. Install wkhtmltopdf from https://wkhtmltopdf.org/downloads.html
-                2. Set ENABLE_PDF_GENERATION = True in resume_export.py
-                3. If needed, set WKHTMLTOPDF_PATH to the executable path
-                
-                Downloading as text instead.
-                """)
-                
-                st.download_button(
-                    label="Download as Text (Fallback)",
-                    data=st.session_state.enhanced_resume,
-                    file_name="enhanced_resume.txt",
-                    mime="text/plain",
-                    use_container_width=True
-                )
-            else:
-                # Generate PDF based on the selected style
-                try:
+                if ENABLE_PDF_GENERATION:
                     pdf_bytes = generate_pdf(
-                        st.session_state.enhanced_resume, 
+                        st.session_state.enhanced_resume,
                         style=resume_style,
-                        name=st.session_state.contact_info.get('name', 'Optimized Resume'),
+                        name=st.session_state.contact_info.get('name', ''),
                         email=st.session_state.contact_info.get('email'),
                         phone=st.session_state.contact_info.get('phone'),
                         location=st.session_state.contact_info.get('location'),
@@ -395,40 +333,19 @@ if st.session_state.enhanced_resume:
                         github=st.session_state.contact_info.get('github'),
                         website=st.session_state.contact_info.get('website')
                     )
-                    
-                    st.download_button(
-                        label=f"Download {resume_style} Resume as PDF",
-                        data=pdf_bytes,
-                        file_name=f"enhanced_resume_{resume_style.lower().replace('-', '_')}.pdf",
-                        mime="application/pdf",
-                        use_container_width=True
-                    )
-                    
-                except Exception as e:
-                    st.error(f"Error generating PDF: {str(e)}")
-                    st.warning("""
-                    PDF generation failed. This might be because:
-                    1. wkhtmltopdf is not installed
-                    2. wkhtmltopdf is not in your PATH
-                    3. The path specified is incorrect
-                    
-                    The app requires wkhtmltopdf for PDF generation.
-                    """)
-                    st.download_button(
-                        label="Download as Text (Fallback)",
-                        data=st.session_state.enhanced_resume,
-                        file_name="enhanced_resume.txt",
-                        mime="text/plain",
-                        use_container_width=True
-                    )
-                
+                    st.download_button(f"Download {resume_style} Resume as PDF", pdf_bytes, f"enhanced_resume_{resume_style.lower().replace('-', '_')}.pdf", mime="application/pdf", use_container_width=True)
+                else:
+                    raise ImportError
+            except Exception as e:
+                st.error(f"PDF generation failed: {e}")
+                st.download_button("Download as Text (Fallback)", st.session_state.enhanced_resume, "enhanced_resume.txt", mime="text/plain", use_container_width=True)
+
         elif export_format == "DOCX":
-            # Generate DOCX based on the selected style
             try:
                 docx_bytes = generate_docx(
-                    st.session_state.enhanced_resume, 
+                    st.session_state.enhanced_resume,
                     style=resume_style,
-                    name=st.session_state.contact_info.get('name', 'Optimized Resume'),
+                    name=st.session_state.contact_info.get('name', ''),
                     email=st.session_state.contact_info.get('email'),
                     phone=st.session_state.contact_info.get('phone'),
                     location=st.session_state.contact_info.get('location'),
@@ -436,32 +353,14 @@ if st.session_state.enhanced_resume:
                     github=st.session_state.contact_info.get('github'),
                     website=st.session_state.contact_info.get('website')
                 )
-                
-                st.download_button(
-                    label=f"Download {resume_style} Resume as DOCX",
-                    data=docx_bytes,
-                    file_name=f"enhanced_resume_{resume_style.lower().replace('-', '_')}.docx",
-                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    use_container_width=True
-                )
-                
+                st.download_button(f"Download {resume_style} Resume as DOCX", docx_bytes, f"enhanced_resume_{resume_style.lower().replace('-', '_')}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True)
             except Exception as e:
-                st.error(f"Error generating DOCX: {str(e)}")
-                st.download_button(
-                    label="Download as Text (Fallback)",
-                    data=st.session_state.enhanced_resume,
-                    file_name="enhanced_resume.txt",
-                    mime="text/plain",
-                    use_container_width=True
-                )
-        else:  # TXT format
-            st.download_button(
-                label="Download as Plain Text",
-                data=st.session_state.enhanced_resume,
-                file_name="enhanced_resume.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
+                st.error(f"Error generating DOCX: {e}")
+                st.download_button("Download as Text (Fallback)", st.session_state.enhanced_resume, "enhanced_resume.txt", mime="text/plain", use_container_width=True)
+
+        else:  # TXT fallback
+            st.download_button("Download as Plain Text", st.session_state.enhanced_resume, "enhanced_resume.txt", mime="text/plain", use_container_width=True)
+
 
 # Add footer
 st.markdown("---")

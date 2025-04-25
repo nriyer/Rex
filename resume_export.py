@@ -109,7 +109,7 @@ ATS_TEMPLATE = """
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>{{ name }} - Resume</title>
+    <title>{{ name }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -166,20 +166,27 @@ ATS_TEMPLATE = """
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>{{ name }}</h1>
-        <div class="contact-info">
-            {% if email %}<span class="contact-item">{{ email }}</span>{% endif %}
-            {% if phone %}<span class="contact-item">{{ phone }}</span>{% endif %}
-            {% if location %}<span class="contact-item">{{ location }}</span>{% endif %}
-        </div>
-        <div class="contact-info">
-            {% if linkedin %}<span class="contact-item">{{ linkedin }}</span>{% endif %}
-            {% if github %}<span class="contact-item">{{ github }}</span>{% endif %}
-            {% if website %}<span class="contact-item">{{ website }}</span>{% endif %}
-        </div>
-    </div>
-    {{ content | safe }}
+  <div class="header">
+    <h1>{{ name }}</h1>
+    {% if title or location or phone or email %}
+    <p>
+      {% if title %}{{ title }}{% endif %}
+      {% if title and location %} | {% endif %}
+      {% if location %}{{ location }}{% endif %}
+      {% if phone %} | {{ phone }}{% endif %}
+      {% if email %} | {{ email }}{% endif %}
+    </p>
+    {% endif %}
+    {% if linkedin or github or website %}
+    <p>
+      {% if linkedin %}<a href="{{ linkedin }}">{{ linkedin }}</a>{% endif %}
+      {% if github %} | <a href="{{ github }}">{{ github }}</a>{% endif %}
+      {% if website %} | <a href="{{ website }}">{{ website }}</a>{% endif %}
+    </p>
+    {% endif %}
+  </div>
+
+  {{ content | safe }}
 </body>
 </html>
 """
@@ -190,7 +197,7 @@ MODERN_TEMPLATE = """
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>{{ name }} - Resume</title>
+    <title>{{ name }}</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -263,20 +270,27 @@ MODERN_TEMPLATE = """
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>{{ name }}</h1>
-        <div class="contact-info">
-            {% if email %}<span class="contact-item">{{ email }}</span>{% endif %}
-            {% if phone %}<span class="contact-item">{{ phone }}</span>{% endif %}
-            {% if location %}<span class="contact-item">{{ location }}</span>{% endif %}
-        </div>
-        <div class="contact-info">
-            {% if linkedin %}<span class="contact-item">{{ linkedin }}</span>{% endif %}
-            {% if github %}<span class="contact-item">{{ github }}</span>{% endif %}
-            {% if website %}<span class="contact-item">{{ website }}</span>{% endif %}
-        </div>
-    </div>
-    {{ content | safe }}
+  <div class="header">
+    <h1>{{ name }}</h1>
+    {% if title or location or phone or email %}
+    <p>
+      {% if title %}{{ title }}{% endif %}
+      {% if title and location %} | {% endif %}
+      {% if location %}{{ location }}{% endif %}
+      {% if phone %} | {{ phone }}{% endif %}
+      {% if email %} | {{ email }}{% endif %}
+    </p>
+    {% endif %}
+    {% if linkedin or github or website %}
+    <p>
+      {% if linkedin %}<a href="{{ linkedin }}">{{ linkedin }}</a>{% endif %}
+      {% if github %} | <a href="{{ github }}">{{ github }}</a>{% endif %}
+      {% if website %} | <a href="{{ website }}">{{ website }}</a>{% endif %}
+    </p>
+    {% endif %}
+  </div>
+
+  {{ content | safe }}
 </body>
 </html>
 """
@@ -287,7 +301,7 @@ PROFESSIONAL_TEMPLATE = """
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>{{ name }} - Resume</title>
+    <title>{{ name }}</title>
     <style>
         body {
             font-family: Georgia, 'Times New Roman', Times, serif;
@@ -352,20 +366,27 @@ PROFESSIONAL_TEMPLATE = """
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>{{ name }}</h1>
-        <div class="contact-info">
-            {% if email %}<span class="contact-item">{{ email }}</span>{% endif %}
-            {% if phone %}<span class="contact-item">{{ phone }}</span>{% endif %}
-            {% if location %}<span class="contact-item">{{ location }}</span>{% endif %}
-        </div>
-        <div class="contact-info">
-            {% if linkedin %}<span class="contact-item">{{ linkedin }}</span>{% endif %}
-            {% if github %}<span class="contact-item">{{ github }}</span>{% endif %}
-            {% if website %}<span class="contact-item">{{ website }}</span>{% endif %}
-        </div>
-    </div>
-    {{ content | safe }}
+  <div class="header">
+    <h1>{{ name }}</h1>
+    {% if title or location or phone or email %}
+    <p>
+      {% if title %}{{ title }}{% endif %}
+      {% if title and location %} | {% endif %}
+      {% if location %}{{ location }}{% endif %}
+      {% if phone %} | {{ phone }}{% endif %}
+      {% if email %} | {{ email }}{% endif %}
+    </p>
+    {% endif %}
+    {% if linkedin or github or website %}
+    <p>
+      {% if linkedin %}<a href="{{ linkedin }}">{{ linkedin }}</a>{% endif %}
+      {% if github %} | <a href="{{ github }}">{{ github }}</a>{% endif %}
+      {% if website %} | <a href="{{ website }}">{{ website }}</a>{% endif %}
+    </p>
+    {% endif %}
+  </div>
+
+  {{ content | safe }}
 </body>
 </html>
 """
@@ -742,7 +763,10 @@ def generate_docx(resume_text, style=STYLE_ATS, name="Resume", email=None, phone
         section.left_margin = Inches(0.5)
     
     # Ensure name has a value
-    name = name if name else "Resume"
+    if not name:
+        print("⚠️ Warning: No name detected for resume header.")
+        name = "Your Name"
+
     
     # Add the header with name and contact information
     # Name

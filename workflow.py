@@ -125,6 +125,33 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
         print(e)
         raise
 
+            # === Build header block from contact_info ===
+    header_lines = []
+
+    if contact_info.get("name"):
+        header_lines.append(contact_info["name"])
+
+    # Optional second line (title/location/phone/email)
+    sub_header = " | ".join([
+        contact_info.get("title", ""),
+        contact_info.get("location", ""),
+        contact_info.get("phone", ""),
+        contact_info.get("email", "")
+    ]).strip(" |")
+    if sub_header:
+        header_lines.append(sub_header)
+
+    # Optional third line (links)
+    link_line = " | ".join(filter(None, [
+        contact_info.get("linkedin", ""),
+        contact_info.get("github", ""),
+        contact_info.get("website", "")
+    ]))
+    if link_line:
+        header_lines.append(link_line)
+
+    header_block = "\n".join(header_lines).strip()
+
     # Step 5: Format sections + assemble resume
     formatted_experience = format_experience_section(enhanced_jobs)
     final_resume = assemble_resume(
