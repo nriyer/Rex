@@ -76,19 +76,26 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>{{ name }}</h1>
-        <div class="contact-info">
-            {% if email %}<span class="contact-item">{{ email }}</span>{% endif %}
-            {% if phone %}<span class="contact-item">{{ phone }}</span>{% endif %}
-            {% if location %}<span class="contact-item">{{ location }}</span>{% endif %}
-        </div>
-        <div class="contact-info">
-            {% if linkedin %}<span class="contact-item">{{ linkedin }}</span>{% endif %}
-            {% if github %}<span class="contact-item">{{ github }}</span>{% endif %}
-            {% if website %}<span class="contact-item">{{ website }}</span>{% endif %}
-        </div>
-    </div>
-    {{ content | safe }}
+  <div class="header">
+    <h1>{{ name }}</h1>
+    {% if title or location or phone or email %}
+    <p>
+      {% if title %}{{ title }}{% endif %}
+      {% if title and location %} | {% endif %}
+      {% if location %}{{ location }}{% endif %}
+      {% if phone %} | {{ phone }}{% endif %}
+      {% if email %} | {{ email }}{% endif %}
+    </p>
+    {% endif %}
+    {% if linkedin or github or website %}
+    <p>
+      {% if linkedin %}<a href="{{ linkedin }}">{{ linkedin }}</a>{% endif %}
+      {% if github %} | <a href="{{ github }}">{{ github }}</a>{% endif %}
+      {% if website %} | <a href="{{ website }}">{{ website }}</a>{% endif %}
+    </p>
+    {% endif %}
+  </div>
+
+  {{ content | safe }}
 </body>
 </html>

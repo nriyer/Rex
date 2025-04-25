@@ -17,27 +17,33 @@ def enhance_summary_with_gpt(summary_text: str, missing_keywords: list) -> str:
     by naturally incorporating missing job description keywords.
     """
     prompt = f"""
-You are enhancing the 'Professional Summary' section of a resume.
+You are enhancing the *Professional Summary* section of a resume.
 
-The original summary is below:
-
----
-{summary_text.strip()}
----
-
-You must naturally incorporate the following missing keywords into the summary, without making it sound robotic or stuffed:
-
-{", ".join(missing_keywords)}
-
-🎯 Guidelines:
-- Keep the improved summary under 60 words
-- Focus on integrating missing *tools, certifications, or domain expertise*
-- Keep tone professional, clear, and concise
-- **Avoid redundancy 
+🎯 Your goal:
+- Keep it **factual**, **concise**, and **punchy** — MAX 2 lines
+- Make it **impactful and succinct** — similar to a concise personal elevator pitch that can be read in under 10 seconds.
+- Do **not fabricate** degrees, tools, or job history that aren't present in the resume
+- Avoid any phrasing that implies lack of expertise or experience unless explicitly stated in the resume
+  (e.g., “entry-level”, “beginner”, “junior”)
+- Focus on integrating missing *tools, certifications, or domain expertise* only if appropriate
+- Keep tone professional, clear, and confident
+- **Avoid redundancy**
 - DO NOT fabricate achievements or job titles
 
-Return ONLY the enhanced summary. Do not include explanations or headers.
-    """
+---
+
+✍️ Current Summary (may be blank):
+{summary_text.strip()}
+
+---
+
+🧠 Missing keywords to integrate (if appropriate):
+{", ".join(missing_keywords)}
+
+---
+
+Return ONLY the improved summary. No bullet points. No “Summary:” label. No extra formatting.
+"""
 
     try:
         response = client.chat.completions.create(
@@ -46,10 +52,10 @@ Return ONLY the enhanced summary. Do not include explanations or headers.
             temperature=0.0,
         )
         return response.choices[0].message.content.strip()
-    
     except Exception as e:
         print(f"[Summary Enhancement Error] {e}")
         return summary_text  # fallback to original
+
 
 #Detect format of skills section (comma vs bullet separated)
 def detect_skills_format(skills_text: str | list | dict) -> str:
