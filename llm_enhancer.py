@@ -20,7 +20,7 @@ def enhance_summary_with_gpt(summary_text: str, missing_keywords: list) -> str:
 You are enhancing the *Professional Summary* section of a resume.
 
 🎯 Your goal:
-- Keep it **factual**, **concise**, and **punchy** — MAX 2 lines
+- Keep it **factual**, **concise**, and **punchy** — ***MAX 2 Sentences***
 - Make it **impactful and succinct** — similar to a concise personal elevator pitch that can be read in under 10 seconds.
 - Do **not fabricate** degrees, tools, or job history that aren't present in the resume
 - Avoid any phrasing that implies lack of expertise or experience unless explicitly stated in the resume
@@ -274,9 +274,9 @@ The original content is below:
 
 🎯 Your task:
 - Rewrite each project entry using the following format:
-  PROJECT TITLE (on its own line, in all caps or bold)
+  - Project title must be wrapped in this exact tag: `<p class="project-title">Your Title Here</p>`
   • Bullet 1 (skill/action/result based)
-  • Bullet 2 (no more than 3–4 per project)
+  • Bullet 2 (no more than 2-3 lines per project)
 - DO NOT use brackets [ ] around titles
 - DO NOT prefix titles with icons or bullets
 - DO NOT increase font size of Project Title

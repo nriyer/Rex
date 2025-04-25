@@ -153,6 +153,13 @@ ATS_TEMPLATE = """
             margin-bottom: 8px;
             font-style: normal;
         }
+        .project-title {
+            font-weight: bold;
+            font-size: 12px;  /* match bullet size */
+            margin-top: 6px;
+            margin-bottom: 2px;
+        }
+
         .section {
             margin-bottom: 15px;
         }
@@ -247,6 +254,14 @@ MODERN_TEMPLATE = """
             color: #555;
             font-style: italic;
         }
+        .project-title {
+            font-weight: bold;
+            font-size: 12px;
+            margin-top: 6px;
+            margin-bottom: 2px;
+            color: #2c3e50;  /* or match your bullet font color */
+        }
+
         .section {
             margin-bottom: 20px;
         }
@@ -353,6 +368,15 @@ PROFESSIONAL_TEMPLATE = """
             font-style: italic;
             text-align: center;
         }
+
+        .project-title {
+            font-weight: bold;
+            font-size: 12px;
+            margin-top: 6px;
+            margin-bottom: 2px;
+            font-family: Georgia, 'Times New Roman', Times, serif;
+        }
+
         .section {
             margin-bottom: 18px;
         }
