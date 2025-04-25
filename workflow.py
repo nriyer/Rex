@@ -161,6 +161,7 @@ def run_resume_enhancement_pipeline(resume_text: str, job_posting: str) -> tuple
         education=education_text,
         projects=enhanced_projects
     )
+    print("[FINAL HTML for export]\n", final_resume)
 
     # Step 6: Post-enhancement scoring
     post_match = compute_keyword_match(final_resume, job_posting)

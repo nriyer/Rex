@@ -154,7 +154,7 @@ ATS_TEMPLATE = """
             font-style: normal;
         }
         .project-title {
-            font-weight: bold;
+            font-weight: bold !important;
             font-size: 12px;  /* match bullet size */
             margin-top: 6px;
             margin-bottom: 2px;
@@ -255,7 +255,7 @@ MODERN_TEMPLATE = """
             font-style: italic;
         }
         .project-title {
-            font-weight: bold;
+            font-weight: bold !important;
             font-size: 12px;
             margin-top: 6px;
             margin-bottom: 2px;
@@ -370,7 +370,7 @@ PROFESSIONAL_TEMPLATE = """
         }
 
         .project-title {
-            font-weight: bold;
+            font-weight: bold !important;
             font-size: 12px;
             margin-top: 6px;
             margin-bottom: 2px;
