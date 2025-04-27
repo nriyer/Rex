@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  dev:
+    build: .
+    ports:
+      - "8501:8501"
+    environment:
+      - ENV=dev
+    volumes:
+      - .:/app
+    command: python manage.py dev
+
+  staging:
+    build: .
+    ports:
+      - "8502:8502"
+    environment:
+      - ENV=staging
+    volumes:
+      - .:/app
+    command: python manage.py staging
