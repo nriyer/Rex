@@ -1,11 +1,20 @@
 import streamlit as st
-from app.export.resume_export import generate_pdf, generate_docx, get_available_styles
+from export.resume_export import generate_pdf, generate_docx, get_available_styles
 import requests
 import json
 from pathlib import Path
 import tempfile
 import os
 import re
+import os
+
+ENV = os.getenv("ENV", "dev")
+
+if ENV == "dev":
+    BACKEND_URL = "http://backend-dev:8000"
+else:
+    BACKEND_URL = "http://localhost:8000"
+
 
 def extract_contact_info(resume_text):
     """Extract basic contact information from resume text."""
@@ -140,7 +149,8 @@ with col1:
             try:
                 with open(tmp_path, 'rb') as f:
                     files = {'file': f}
-                    response = requests.post('http://localhost:8000/extract-text', files=files)
+                    response = requests.post(f"{BACKEND_URL}/extract-text", files=files)
+
                     if response.status_code == 200:
                         st.session_state.resume_text = response.json()['html_resume']
                         
@@ -191,7 +201,7 @@ if st.button("Optimize Resume", type="primary"):
             try:
                 # Call the backend optimization endpoint
                 response = requests.post(
-                    'http://localhost:8000/optimize-resume',
+                    f"{BACKEND_URL}/optimize-resume",
                     json={
                         "html_resume": st.session_state.resume_text,
                         'job_posting': st.session_state.job_description

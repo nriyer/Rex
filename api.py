@@ -1,6 +1,10 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from workflow import run_resume_enhancement_pipeline
+from api_utils.environment import setup_environment 
+
+setup_environment()  # <-- new, load environment at startup
+
+from api_utils.workflow import run_resume_enhancement_pipeline
 from pydantic import BaseModel
 from typing import Optional
 
@@ -33,11 +37,14 @@ async def extract_text(file: UploadFile = File(...)):
             f_out.write(content)
 
         # Convert to HTML using updated converter
-        from html_converter import convert_resume_to_html
+        from api_utils.html_converter import convert_resume_to_html
         html = convert_resume_to_html(temp_path)
 
         return {"html_resume": html}
     except Exception as e:
+        import traceback
+        print("❌ Error during /extract-text:")
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
 

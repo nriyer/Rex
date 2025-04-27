@@ -1,16 +1,16 @@
 import os
 from dotenv import load_dotenv
-from gpt_parser import parse_resume_with_gpt
-from keyword_matcher import extract_keywords, filter_relevant_keywords, compute_keyword_match
-from keyword_classifier import classify_keywords
-from keyword_scorer import score_keywords
-from llm_enhancer import (
+from api_utils.gpt_parser import parse_resume_with_gpt
+from api_utils.keyword_matcher import extract_keywords, filter_relevant_keywords, compute_keyword_match
+from api_utils.keyword_classifier import classify_keywords
+from api_utils.keyword_scorer import score_keywords
+from api_utils.llm_enhancer import (
     enhance_summary_with_gpt,
     enhance_skills_with_gpt,
     enhance_experience_job,
     enhance_projects_with_gpt
 )
-from resume_formatter import format_experience_section, assemble_resume
+from api_utils.resume_formatter import format_experience_section, assemble_resume
 
 load_dotenv()
 

@@ -1,8 +1,10 @@
 # keyword_classifier.py
 import json
 from pathlib import Path
-
+import os
 from typing import List, Dict
+import openai
+from dotenv import load_dotenv
 
 # Persistent GPT classification cache
 CACHE_PATH = Path("classified_keywords_cache.json")
@@ -88,13 +90,8 @@ CATEGORIES = {
 }
 
 
-import os
-from openai import OpenAI
-from dotenv import load_dotenv
-
 # Load key for fallback GPT use
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def fallback_classify_with_gpt(keyword: str, model="gpt-4") -> str:
     norm_kw = keyword.lower().strip()
@@ -113,7 +110,7 @@ def fallback_classify_with_gpt(keyword: str, model="gpt-4") -> str:
     )
 
     try:
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model=model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,

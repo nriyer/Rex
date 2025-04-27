@@ -1,15 +1,14 @@
 # llm_enhancer.py
 
 import os
-from openai import OpenAI
+import openai
 from dotenv import load_dotenv
 from typing import List
-from keyword_matcher import extract_keywords, filter_relevant_keywords
+from api_utils.keyword_matcher import extract_keywords, filter_relevant_keywords
 
 
 # Load your OpenAI key securely
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def enhance_summary_with_gpt(summary_text: str, missing_keywords: list) -> str:
     """
@@ -46,7 +45,7 @@ Return ONLY the improved summary. No bullet points. No “Summary:” label. No 
 """
 
     try:
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
@@ -127,7 +126,7 @@ def enhance_skills_with_gpt(skills_text: str, missing_keywords: list) -> str:
     prompt = build_skills_prompt(skills_text, missing_keywords, format_type)
 
     try:
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.0,
@@ -208,8 +207,8 @@ def enhance_experience_job(
     Returns:
         New job dict with same structure but enhanced bullet points
     """
-    from openai import OpenAI  # Ensure OpenAI is loaded after dotenv
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    import openai  # Ensure OpenAI is loaded after dotenv
+    
 
     bullets = job["bullets"]
     if isinstance(bullets, str):
@@ -222,7 +221,7 @@ def enhance_experience_job(
     )
 
     try:
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
@@ -294,7 +293,7 @@ Return only the improved Projects section — no section header, no explanations
 def enhance_projects_with_gpt(projects_text, missing_keywords: list) -> str:
     prompt = build_projects_prompt(projects_text, missing_keywords)
     try:
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,

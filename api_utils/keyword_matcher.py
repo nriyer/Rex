@@ -1,12 +1,13 @@
 import re
-from openai import OpenAI
+import openai
 from dotenv import load_dotenv
 import os
 import json
 from hashlib import md5
 from pathlib import Path
 from typing import List
-from keyword_classifier import normalize_keyword
+from api_utils.keyword_classifier import normalize_keyword
+
 
 # === STOPWORDS for filtering generic words ===
 STOPWORDS = {
@@ -104,7 +105,7 @@ def filter_relevant_keywords(all_keywords: List[str], model="gpt-4", job_id=None
 
 
     load_dotenv()
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    
 
     response = client.chat.completions.create(
         model=model,
