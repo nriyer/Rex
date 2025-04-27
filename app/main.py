@@ -1,10 +1,10 @@
 import streamlit as st
+from app.export.resume_export import generate_pdf, generate_docx, get_available_styles
 import requests
 import json
 from pathlib import Path
 import tempfile
 import os
-from resume_export import generate_pdf, generate_docx, get_available_styles
 import re
 
 def extract_contact_info(resume_text):
