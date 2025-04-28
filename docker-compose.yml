@@ -12,8 +12,8 @@ services:
     environment:
       - ENV=docker
     volumes:
-      - .:/app
-    command: uvicorn api:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+      - .:/app:cached
+    command: uvicorn api:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app --log-level debug
 
   frontend-dev:
     build:
@@ -26,7 +26,7 @@ services:
     environment:
       - DOCKERIZED=1
     volumes:
-      - .:/app
+      - .:/app:cached
     command: streamlit run app/main.py --server.port 8501
 
 

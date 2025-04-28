@@ -69,7 +69,7 @@ if FILTER_CACHE_PATH.exists():
 else:
     filter_cache = {}
 
-def filter_relevant_keywords(all_keywords: List[str], model="gpt-4", job_id=None, debug: bool = False) -> List[str]:
+def filter_relevant_keywords(all_keywords: List[str], model="gpt-3.5-turbo", job_id=None, debug: bool = False) -> List[str]:
     # === Normalize and dedupe ===
     filtered_input = sorted(set(normalize_keyword(k) for k in all_keywords if len(k) > 3))
     
@@ -107,7 +107,7 @@ def filter_relevant_keywords(all_keywords: List[str], model="gpt-4", job_id=None
     load_dotenv()
     
 
-    response = client.chat.completions.create(
+    response = openai.ChatCompletion.create(
         model=model,
         messages=[{"role": "user", "content": prompt}],
         temperature=0.0,
