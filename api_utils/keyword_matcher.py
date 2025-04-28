@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import List
 from api_utils.keyword_classifier import normalize_keyword
 
+MODEL_NAME = os.getenv("OPENAI_MODEL", "gpt-4")
+
 
 # === STOPWORDS for filtering generic words ===
 STOPWORDS = {
@@ -69,7 +71,7 @@ if FILTER_CACHE_PATH.exists():
 else:
     filter_cache = {}
 
-def filter_relevant_keywords(all_keywords: List[str], model="gpt-3.5-turbo", job_id=None, debug: bool = False) -> List[str]:
+def filter_relevant_keywords(all_keywords: List[str], model=MODEL_NAME, job_id=None, debug: bool = False) -> List[str]:
     # === Normalize and dedupe ===
     filtered_input = sorted(set(normalize_keyword(k) for k in all_keywords if len(k) > 3))
     
